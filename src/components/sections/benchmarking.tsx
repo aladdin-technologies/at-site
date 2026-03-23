@@ -54,7 +54,7 @@ export function Benchmarking() {
           </div>
 
           {/* Dashboard content */}
-          <div className="p-6">
+          <div className="p-3 sm:p-6">
             {/* KPI row */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {kpiMetrics.map((kpi) => (
@@ -106,8 +106,8 @@ export function Benchmarking() {
             </div>
 
             {/* Bar chart full width */}
-            <div className="mt-6 rounded-xl border border-border-default bg-surface-secondary p-4">
-              <div className="mb-4 flex items-center justify-between">
+            <div className="mt-6 rounded-xl border border-border-default bg-surface-secondary p-3 sm:p-4">
+              <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h4 className="text-sm font-semibold text-text-primary">
                     Airport Charges Comparison

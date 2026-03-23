@@ -14,7 +14,7 @@ import { passengerThroughputData } from "@/lib/chart-data";
 /** Area chart showing monthly passenger throughput with forecast overlay */
 export function AirportPerformanceChart() {
   return (
-    <div className="h-[280px] w-full">
+    <div className="h-[200px] sm:h-[280px] w-full">
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={passengerThroughputData}>
           <defs>

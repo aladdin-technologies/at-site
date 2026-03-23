@@ -14,7 +14,7 @@ import { chargesComparisonData } from "@/lib/chart-data";
 /** Horizontal bar chart comparing airport charges across major hubs */
 export function ChargesComparisonChart() {
   return (
-    <div className="h-[280px] w-full">
+    <div className="h-[220px] sm:h-[280px] w-full">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={chargesComparisonData} barGap={2}>
           <CartesianGrid

@@ -10,7 +10,7 @@ import { CountUp } from "@/components/motion/count-up";
 /** Hero section — cinematic entry with animated gradient background */
 export function Hero() {
   return (
-    <section className="relative flex min-h-screen items-center justify-center overflow-hidden pt-20">
+    <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden pt-20 pb-0">
       {/* Animated background */}
       <div className="absolute inset-0 bg-[var(--hero-gradient)] animate-gradient" />
 
@@ -94,12 +94,12 @@ export function Hero() {
         </motion.div>
       </div>
 
-      {/* Scroll indicator */}
+      {/* Scroll indicator — positioned inside the content flow */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1.5, duration: 1 }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2"
+        className="relative z-10 mt-12 flex justify-center pb-8"
       >
         <motion.div
           animate={{ y: [0, 8, 0] }}

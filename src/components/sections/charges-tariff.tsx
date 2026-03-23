@@ -113,7 +113,7 @@ export function ChargesTariff() {
                   </div>
                 ))}
               </div>
-              <div className="h-[300px]">
+              <div className="h-[220px] sm:h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={tariffHistoryData}>
                     <CartesianGrid

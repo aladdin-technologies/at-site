@@ -98,19 +98,12 @@ export function Footer() {
         <Divider />
 
         {/* Bottom bar */}
-        <div className="flex flex-col items-center justify-between gap-4 py-8 sm:flex-row">
-          <div className="text-xs text-text-tertiary">
-            <p>
-              &copy; {year} {company.legal}. All rights reserved.
-            </p>
-            <p className="mt-1">
-              Company Registration No. {company.registration} &middot;{" "}
-              {company.address.slice(-2).join(", ")}
-            </p>
-          </div>
-          <div className="text-xs text-text-tertiary">
-            {company.address.slice(0, -2).join(", ")}
-          </div>
+        <div className="space-y-4 py-8 pb-16 text-xs text-text-tertiary sm:pb-8">
+          <p>
+            &copy; {year} {company.legal}. All rights reserved.
+          </p>
+          <p>Company Registration Number: {company.registration}</p>
+          <p>{company.address.join(", ")}</p>
         </div>
       </div>
     </footer>
