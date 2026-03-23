@@ -10,7 +10,7 @@ import { CountUp } from "@/components/motion/count-up";
 /** Hero section — cinematic entry with animated gradient background */
 export function Hero() {
   return (
-    <section className="relative flex min-h-screen items-center justify-center overflow-hidden">
+    <section className="relative flex min-h-screen items-center justify-center overflow-hidden pt-20">
       {/* Animated background */}
       <div className="absolute inset-0 bg-[var(--hero-gradient)] animate-gradient" />
 
