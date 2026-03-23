@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { GradientText } from "@/components/ui/gradient-text";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, ChevronDown } from "lucide-react";
+import { CountUp } from "@/components/motion/count-up";
 
 /** Hero section — cinematic entry with animated gradient background */
 export function Hero() {
@@ -83,7 +84,7 @@ export function Hero() {
           ].map((stat) => (
             <div key={stat.label} className="text-center">
               <div className="font-mono text-2xl font-bold text-text-primary sm:text-3xl">
-                {stat.value}
+                <CountUp value={stat.value} />
               </div>
               <div className="mt-1 text-sm text-text-tertiary">
                 {stat.label}
