@@ -146,6 +146,15 @@ html {
   background-size: 32px 32px;
 }
 
+/* ─── Shake animation ─── */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
 /* ─── Glow effects ─── */
 .glow-accent {
   box-shadow: 0 0 20px var(--glow-color), 0 0 40px var(--glow-color);
