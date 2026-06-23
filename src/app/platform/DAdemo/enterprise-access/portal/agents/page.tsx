@@ -54,8 +54,8 @@ function StatusCard({
 }) {
   const counter = useCountUp(count);
   return (
+    <div ref={counter.ref}>
     <button
-      ref={counter.ref}
       onClick={onClick}
       className={`rounded-xl border p-4 text-left transition-all duration-200 ${
         active
@@ -84,6 +84,7 @@ function StatusCard({
         {counter.value.toLocaleString()}
       </p>
     </button>
+    </div>
   );
 }
 

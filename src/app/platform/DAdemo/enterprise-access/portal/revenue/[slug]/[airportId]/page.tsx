@@ -466,7 +466,7 @@ export default function ChargeDetailPage() {
           <h1 className="text-xl font-bold text-white">
             {airport.name} <span className="font-mono text-cyan-400">({airport.iata_code})</span>
           </h1>
-          <p className="text-sm text-slate-500">{airport.city && `${airport.city}, `}{airport.country_name} &middot; {revLine.name}</p>
+          <p className="text-sm text-slate-500">{airport.city && `${airport.city}, `}{airport.country_name}</p>
         </div>
 
         {/* Charge details */}
@@ -480,7 +480,8 @@ export default function ChargeDetailPage() {
               <div key={c.id} className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h2 className="text-base font-bold text-white mb-1">{c.charge_name}</h2>
+                    <h2 className="text-base font-bold text-white mb-1">{revLine.name}</h2>
+                    <p className="text-[11px] text-slate-600 mb-1">{c.charge_name}</p>
                     {c.charge_description && (
                       <p className="text-[12px] text-slate-500 leading-relaxed max-w-2xl">{c.charge_description}</p>
                     )}

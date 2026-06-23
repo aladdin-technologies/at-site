@@ -105,7 +105,7 @@ export default function RateCardPage() {
           .eq("revenue_line_id", rl.id)
           .eq("year", 2026)
           .order("base_rate", { ascending: false });
-        setCharges(ch ?? []);
+        setCharges((ch ?? []) as unknown as ChargeRow[]);
       }
       setLoading(false);
     }
