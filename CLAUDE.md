@@ -147,6 +147,12 @@ Tailwind classes use the token names directly: `bg-surface`, `text-text-primary`
 - **Address**: 7 Kent House, Stratton Close, Edgware, London HA8 6PR, UK
 - These are configured in `src/lib/site-config.ts` and rendered in the footer
 
+## Dev Server
+
+- **Keep the preview dev server running at all times.** Do not stop it between tasks.
+- Start with `preview_start` using the `dev` config from `.claude/launch.json`.
+- Only restart when necessary (e.g. env var changes, dependency installs).
+
 ## Notes
 
 - Recharts logs warnings during SSR about container dimensions — this is expected and harmless
