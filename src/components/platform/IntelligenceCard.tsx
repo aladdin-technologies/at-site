@@ -17,16 +17,20 @@ export function IntelligenceCard({
   title,
   description,
   status,
+  href,
 }: {
   variant: "revenue" | "asset" | "economics";
   title: string;
   description: string;
   status: string;
+  href?: string;
 }) {
   const Icon = icons[variant];
+  const Tag = href ? "a" : "div";
   return (
-    <div
-      className={`relative group rounded-2xl border bg-gradient-to-br ${accents[variant]} backdrop-blur-sm p-6 transition-all duration-300 cursor-default`}
+    <Tag
+      {...(href ? { href } : {})}
+      className={`relative group rounded-2xl border bg-gradient-to-br ${accents[variant]} backdrop-blur-sm p-6 transition-all duration-300 ${href ? "cursor-pointer" : "cursor-default"}`}
     >
       <div className="flex items-start justify-between mb-4">
         <div
@@ -40,6 +44,6 @@ export function IntelligenceCard({
       </div>
       <h3 className="text-lg font-bold text-white mb-2">{title}</h3>
       <p className="text-sm text-slate-400 leading-relaxed">{description}</p>
-    </div>
+    </Tag>
   );
 }

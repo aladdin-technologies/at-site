@@ -40,7 +40,7 @@ async function fetchAirports() {
   while (true) {
     const { data, error } = await supabase
       .from("airports")
-      .select("id,icao_code,iata_code,name,country,city,latitude,longitude,airport_type")
+      .select("id,icao_code,iata_code,name,country,city,latitude,longitude,airport_type,aip_source_url,country_name")
       .range(offset, offset + batchSize - 1);
     if (error || !data || data.length === 0) break;
     for (const row of data) {

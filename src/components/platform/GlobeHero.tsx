@@ -43,8 +43,8 @@ export function GlobeHero() {
             href="/platform/DAdemo/enterprise-access/portal/agents"
           />
           <MetricCard
-            title="KPI fields designed"
-            value={18000}
+            title="Potential KPI fields"
+            value={5000}
             suffix="+"
           />
           <MetricCard

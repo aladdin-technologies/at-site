@@ -11,7 +11,7 @@ import {
   type AgentStatus,
 } from "@/lib/agentStatus";
 import { AIRPORT_TYPE_LABELS } from "@/lib/supabase";
-import { Search } from "lucide-react";
+import { Search, ChevronRight } from "lucide-react";
 
 function useCountUp(target: number, duration = 1600) {
   const [value, setValue] = useState(0);
@@ -233,15 +233,17 @@ export default function AgentsPage() {
                   <th className="text-left px-4 py-3 text-[11px] font-semibold tracking-wider uppercase text-slate-500 hidden lg:table-cell">
                     Type
                   </th>
+                  <th className="w-10"></th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.slice(0, 200).map((a) => (
                   <tr
                     key={a.id}
-                    className="border-b border-white/[0.03] hover:bg-white/[0.02] transition-colors"
+                    onClick={() => router.push(`/platform/DAdemo/enterprise-access/portal/agents/${a.id}`)}
+                    className="border-b border-white/[0.03] hover:bg-white/[0.03] transition-colors cursor-pointer group"
                   >
-                    <td className="px-4 py-2.5">
+                    <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <span className="relative flex items-center justify-center w-4 h-4">
                           {a.agentStatus !== "none" && (
@@ -263,20 +265,23 @@ export default function AgentsPage() {
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-2.5 text-white font-medium">
+                    <td className="px-4 py-3 text-white font-medium group-hover:text-cyan-400 transition-colors">
                       {a.name}
                     </td>
-                    <td className="px-4 py-2.5 font-mono text-cyan-400 hidden sm:table-cell">
+                    <td className="px-4 py-3 font-mono text-cyan-400 hidden sm:table-cell">
                       {a.iata_code || "—"}
                     </td>
-                    <td className="px-4 py-2.5 text-slate-400 hidden md:table-cell">
+                    <td className="px-4 py-3 text-slate-400 hidden md:table-cell">
                       {a.city || "—"}
                     </td>
-                    <td className="px-4 py-2.5 text-slate-400 hidden md:table-cell">
-                      {a.country}
+                    <td className="px-4 py-3 text-slate-400 hidden md:table-cell">
+                      {a.country_name || a.country}
                     </td>
-                    <td className="px-4 py-2.5 text-slate-500 text-[11px] hidden lg:table-cell">
+                    <td className="px-4 py-3 text-slate-500 text-[11px] hidden lg:table-cell">
                       {AIRPORT_TYPE_LABELS[a.airportType]}
+                    </td>
+                    <td className="px-4 py-3">
+                      <ChevronRight size={14} className="text-slate-700 group-hover:text-slate-400 transition-colors" />
                     </td>
                   </tr>
                 ))}

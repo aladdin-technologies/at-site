@@ -39,7 +39,8 @@ export default function DashboardPage() {
             variant="revenue"
             title="Revenue Intelligence"
             description="Benchmark airport revenue lines, charge structures and commercial income streams."
-            status="Coming next"
+            status="Live"
+            href="/platform/DAdemo/enterprise-access/portal/revenue"
           />
           <IntelligenceCard
             variant="asset"

@@ -6,7 +6,7 @@ import { Radio, X, LogOut } from "lucide-react";
 
 const NAV_ITEMS = [
   { label: "Home", href: "/platform/DAdemo/enterprise-access/portal/dashboard", active: true },
-  { label: "Revenue Intelligence", href: "#", coming: true },
+  { label: "Revenue Intelligence", href: "/platform/DAdemo/enterprise-access/portal/revenue" },
   { label: "Asset Intelligence", href: "#", coming: true },
   { label: "Economics Intelligence", href: "#", coming: true },
   { label: "Charges Database", href: "#", coming: true },

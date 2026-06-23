@@ -5,7 +5,19 @@
       "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --no-git --turbopack --use-npm --import-alias \"@/*\" --no-experimental-app 2)",
       "Bash(1:*)",
       "Bash(printf 'n\\\\nn\\\\n')",
-      "Bash(yes \"\")"
+      "Bash(yes \"\")",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(ls D:/dev/at/at-site/node_modules/.bin/next*)",
+      "Bash(gh api:*)",
+      "PowerShell(New-Item -ItemType Directory -Force \"D:\\\\dev\\\\at\\\\at-site\\\\src\\\\app\\\\platform\\\\DAdemo\\\\enterprise-access\\\\portal\\\\verify\")",
+      "mcp__visualize__read_me",
+      "mcp__visualize__show_widget",
+      "Bash(git commit -m ' *)",
+      "Bash(node -e \"const sharp = require\\('sharp'\\); sharp\\('D:/dev/at/at-site/qr-verify.png'\\).jpeg\\({quality: 100}\\).toFile\\('D:/dev/at/at-site/qr-verify.jpg'\\).then\\(\\(\\) => console.log\\('done'\\)\\).catch\\(\\(\\) => { process.exit\\(1\\) }\\)\")",
+      "Bash(npx --yes sharp-cli -i \"D:/dev/at/at-site/qr-verify.png\" -o \"D:/dev/at/at-site/qr-verify.jpg\" -f jpg)",
+      "Bash(node -e ' *)"
     ]
   }
 }
