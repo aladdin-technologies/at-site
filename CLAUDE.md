@@ -147,6 +147,23 @@ Tailwind classes use the token names directly: `bg-surface`, `text-text-primary`
 - **Address**: 7 Kent House, Stratton Close, Edgware, London HA8 6PR, UK
 - These are configured in `src/lib/site-config.ts` and rendered in the footer
 
+## UI/UX Standards
+
+- **Visual quality is paramount.** Every component must feel like a Bloomberg Terminal / Google Earth / premium command center. No shortcuts on visuals.
+- **Use flags, icons, and visual indicators** wherever possible — country flags for currencies, pulsing dots for statuses, color-coded badges for categories.
+- **Dropdowns must be custom components** with search, flags, and visual hierarchy — never plain HTML `<select>` elements.
+- **Dark premium aesthetic**: `bg-[#060a14]`, glassmorphism cards, cyan/violet accents, no clutter.
+- **Every interactive element** needs hover states, transitions, and feedback.
+- **Mobile-first responsive**: everything must work on a phone for QR code demo scenarios.
+
+## Animation Rules
+
+- **All numbers on screen MUST animate from 0 to their target value** using count-up animation (intersection observer, cubic ease-out). No number should appear instantly — it must always count up.
+- This applies everywhere: metric cards, status counts, charge amounts, airport counts, agent counts, progress percentages.
+- Use the `useCountUp` pattern (see `MetricCard.tsx` or `agents/page.tsx`) for all numeric displays.
+- Status dots must have pulsing ring animations (`animate-[ping_2s_ease-in-out_infinite]`).
+- Hover transitions: `transition-all duration-300` on all interactive elements.
+
 ## Dev Server
 
 - **Keep the preview dev server running at all times.** Do not stop it between tasks.

@@ -9,7 +9,9 @@ import {
   REVENUE_CATEGORY_LABELS,
   type RevenueLineRow,
 } from "@/lib/supabase";
-import { ArrowLeft, Search, ArrowUpDown, ChevronRight } from "lucide-react";
+import { ArrowLeft, Search, ChevronRight } from "lucide-react";
+import { useCurrencyConverter } from "@/lib/useCurrency";
+import { AnimatedNumber } from "@/components/platform/AnimatedNumber";
 
 interface ChargeRow {
   id: string;
@@ -68,6 +70,7 @@ export default function RateCardPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortKey>("rate_desc");
+  const { displayCurrency, convert } = useCurrencyConverter();
 
   useEffect(() => {
     if (sessionStorage.getItem("at-portal-auth") !== "1") {
@@ -296,7 +299,7 @@ export default function RateCardPage() {
                       key={c.id}
                       onClick={() =>
                         router.push(
-                          `/platform/DAdemo/enterprise-access/portal/agents/${c.airports.id}`,
+                          `/platform/DAdemo/enterprise-access/portal/revenue/${slug}/${c.airports.id}`,
                         )
                       }
                       className="border-b border-white/[0.03] hover:bg-white/[0.03] transition-colors cursor-pointer group"
@@ -313,20 +316,26 @@ export default function RateCardPage() {
                         {c.airports.country_name || c.airports.country}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <span className="font-mono font-bold text-white">
-                          {c.base_rate != null
-                            ? c.base_rate.toLocaleString(undefined, {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })
-                            : "—"}
-                        </span>
-                        <span className="text-cyan-400/70 text-[10px] ml-1 font-semibold">
-                          {c.currency}
-                        </span>
-                        <span className="block text-[10px] text-slate-500 mt-0.5">
-                          {formatUnit(c.unit_basis, c.formula_type)}
-                        </span>
+                        {(() => {
+                          if (c.base_rate == null) return <span className="text-slate-500">—</span>;
+                          const converted = convert(c.base_rate, c.currency);
+                          return (
+                            <>
+                              <AnimatedNumber value={converted.value} className="font-mono font-bold text-white" />
+                              <span className="text-cyan-400/70 text-[10px] ml-1 font-semibold">
+                                {converted.currency}
+                              </span>
+                              <span className="block text-[10px] text-slate-500 mt-0.5">
+                                {formatUnit(c.unit_basis, c.formula_type)}
+                              </span>
+                              {displayCurrency !== "AUTO" && converted.currency !== c.currency && (
+                                <span className="block text-[9px] text-slate-700 mt-0.5">
+                                  Originally {c.base_rate.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {c.currency}
+                                </span>
+                              )}
+                            </>
+                          );
+                        })()}
                       </td>
                       <td className="px-4 py-3 text-slate-500 text-[11px] capitalize hidden lg:table-cell">
                         {c.direction || "—"}
