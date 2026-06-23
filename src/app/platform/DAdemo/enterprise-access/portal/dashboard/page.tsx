@@ -29,7 +29,7 @@ export default function DashboardPage() {
   if (!authorized) return null;
 
   return (
-    <div className="min-h-screen bg-[#060a14] text-white">
+    <div className="min-h-screen bg-background dark:bg-[#060a14] text-white">
       <TopBar />
       <GlobeHero />
 

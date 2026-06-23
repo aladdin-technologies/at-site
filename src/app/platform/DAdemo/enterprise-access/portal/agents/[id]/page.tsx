@@ -83,7 +83,7 @@ export default function AirportDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#060a14] text-white">
+      <div className="min-h-screen bg-background dark:bg-[#060a14] text-white">
         <TopBar />
         <div className="flex items-center justify-center h-[60vh]">
           <div className="w-8 h-8 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
@@ -94,7 +94,7 @@ export default function AirportDetailPage() {
 
   if (!airport) {
     return (
-      <div className="min-h-screen bg-[#060a14] text-white">
+      <div className="min-h-screen bg-background dark:bg-[#060a14] text-white">
         <TopBar />
         <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
           <p className="text-slate-400">Airport not found</p>
@@ -115,7 +115,7 @@ export default function AirportDetailPage() {
   const mapsEmbedUrl = `https://www.google.com/maps/embed/v1/view?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&center=${airport.latitude},${airport.longitude}&zoom=14&maptype=satellite`;
 
   return (
-    <div className="min-h-screen bg-[#060a14] text-white">
+    <div className="min-h-screen bg-background dark:bg-[#060a14] text-white">
       <TopBar />
 
       <div className="max-w-[1000px] mx-auto px-6 py-8">

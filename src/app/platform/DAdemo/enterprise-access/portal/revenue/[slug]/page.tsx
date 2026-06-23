@@ -156,7 +156,7 @@ export default function RateCardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#060a14] text-white">
+      <div className="min-h-screen bg-background dark:bg-[#060a14] text-white">
         <TopBar />
         <div className="flex items-center justify-center h-[60vh]">
           <div className="w-8 h-8 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
@@ -167,7 +167,7 @@ export default function RateCardPage() {
 
   if (!revLine) {
     return (
-      <div className="min-h-screen bg-[#060a14] text-white">
+      <div className="min-h-screen bg-background dark:bg-[#060a14] text-white">
         <TopBar />
         <div className="flex flex-col items-center justify-center h-[60vh] gap-4">
           <p className="text-slate-400">Revenue line not found</p>
@@ -187,7 +187,7 @@ export default function RateCardPage() {
   const color = REVENUE_CATEGORY_COLORS[revLine.category];
 
   return (
-    <div className="min-h-screen bg-[#060a14] text-white">
+    <div className="min-h-screen bg-background dark:bg-[#060a14] text-white">
       <TopBar />
 
       <div className="max-w-[1400px] mx-auto px-6 py-8">

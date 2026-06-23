@@ -164,6 +164,13 @@ Tailwind classes use the token names directly: `bg-surface`, `text-text-primary`
 - Status dots must have pulsing ring animations (`animate-[ping_2s_ease-in-out_infinite]`).
 - Hover transitions: `transition-all duration-300` on all interactive elements.
 
+## Notifications
+
+- **Send all chat updates/responses to Telegram** via @Aladdin_Technologies_Bot.
+- Bot token and chat ID stored in Claude memory (`telegram-bot.md`).
+- Use Node.js `https` module (not curl) to avoid UTF-8 issues.
+- Send build summaries, deployment notifications, and progress updates after significant work.
+
 ## Dev Server
 
 - **Keep the preview dev server running at all times.** Do not stop it between tasks.
