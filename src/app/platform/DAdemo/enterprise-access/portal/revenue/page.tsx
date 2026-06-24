@@ -80,7 +80,7 @@ export default function RevenuePage() {
   if (!authorized) return null;
 
   return (
-    <div className="min-h-screen bg-background dark:bg-[#060a14] text-white">
+    <div className="min-h-screen bg-[#060a14] text-white">
       <TopBar />
 
       <div className="max-w-[1400px] mx-auto px-6 py-8">

@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useTheme } from "next-themes";
-import { Radio, X, LogOut, Sun, Moon } from "lucide-react";
+import { Radio, X, LogOut } from "lucide-react";
 import { CurrencyPicker } from "./CurrencyPicker";
 
 const NAV_ITEMS = [
@@ -18,8 +17,6 @@ export function TopBar() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
-  const { theme, setTheme } = useTheme();
-
   function handleLogout() {
     sessionStorage.removeItem("at-portal-auth");
     router.push("/platform/DAdemo/enterprise-access/portal/verify");
@@ -27,7 +24,7 @@ export function TopBar() {
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full border-b border-border-default bg-background/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 w-full border-b border-white/[0.06] bg-[#060a14]/80 backdrop-blur-xl">
         <div className="max-w-[1400px] mx-auto flex items-center justify-between h-14 px-6">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
@@ -63,17 +60,6 @@ export function TopBar() {
               Global agents online
             </a>
             <CurrencyPicker />
-            <button
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-white/[0.06] dark:hover:bg-white/[0.06] hover:bg-black/[0.06] transition-colors"
-              aria-label="Toggle theme"
-            >
-              {theme === "dark" ? (
-                <Sun size={16} className="text-slate-400" />
-              ) : (
-                <Moon size={16} className="text-slate-600" />
-              )}
-            </button>
             <button
               onClick={() => setOpen(true)}
               className="flex flex-col justify-center items-center gap-[5px] w-9 h-9 rounded-lg hover:bg-white/[0.06] transition-colors"
