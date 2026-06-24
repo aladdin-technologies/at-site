@@ -46,7 +46,7 @@ function LiveGauge({
             <Icon size={16} style={{ color }} />
           </div>
           <div>
-            <p className="text-[10px] font-semibold tracking-wider uppercase text-slate-500 truncate">{label}</p>
+            <p className="text-[10px] font-semibold tracking-wider uppercase text-slate-500 line-clamp-2">{label}</p>
             <p className="text-lg font-bold font-mono text-white">
               {displayVal}
               <span className="text-[11px] text-slate-500 ml-1">{unit}</span>
@@ -89,7 +89,7 @@ function LiveStat({
         <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: color + "15" }}>
           <Icon size={16} style={{ color }} />
         </div>
-        <p className="text-[10px] font-semibold tracking-wider uppercase text-slate-500 truncate">{label}</p>
+        <p className="text-[10px] font-semibold tracking-wider uppercase text-slate-500 line-clamp-2">{label}</p>
       </div>
       <p className="text-2xl font-bold font-mono text-white">
         {value}
@@ -176,12 +176,12 @@ export default function SystemPage() {
   const [authorized, setAuthorized] = useState(false);
   const [uptime, setUptime] = useState("0d 0h 0m");
 
-  const cpuUsage = useAnimatedValue(34, 8, 1500);
-  const ramUsage = useAnimatedValue(12.4, 0.6, 3000);
-  const networkIn = useAnimatedValue(2.8, 1.2, 2000);
-  const networkOut = useAnimatedValue(1.4, 0.5, 2500);
-  const activeAgents = useAnimatedValue(2540, 30, 4000);
-  const requestsPerSec = useAnimatedValue(847, 120, 1800);
+  const cpuUsage = useAnimatedValue(84, 6, 1500);
+  const ramUsage = useAnimatedValue(57.8, 1.2, 3000);
+  const networkIn = useAnimatedValue(3.8, 0.5, 2000);
+  const networkOut = useAnimatedValue(3.2, 0.4, 2500);
+  const activeAgents = useAnimatedValue(2580, 25, 4000);
+  const requestsPerSec = useAnimatedValue(1247, 150, 1800);
 
   useEffect(() => {
     if (sessionStorage.getItem("at-portal-auth") !== "1") {
@@ -240,12 +240,12 @@ export default function SystemPage() {
         {/* Live gauges */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <LiveGauge label="CPU Utilization" value={cpuUsage} max={100} unit="%" color="#22d3ee" icon={Cpu} />
-          <LiveGauge label="RAM Usage" value={ramUsage} max={32} unit="GB" color="#a78bfa" icon={MemoryStick} />
+          <LiveGauge label="RAM Usage" value={ramUsage} max={64} unit="GB" color="#a78bfa" icon={MemoryStick} />
         </div>
 
         {/* Static + semi-live stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <LiveStat label="Storage Used" value="38.7" unit="GB" icon={HardDrive} color="#f59e0b" subtitle="of 500 GB (7.7%)" />
+          <LiveStat label="Storage Used" value="43.2" unit="TB" icon={HardDrive} color="#f59e0b" subtitle="of 50 TB (86.4%)" />
           <LiveStat label="Uptime" value={uptime} unit="" icon={Clock} color="#34d399" subtitle="Since last restart" />
           <LiveStat label="Active Agents" value={Math.round(activeAgents).toLocaleString()} unit="" icon={Zap} color="#22d3ee" subtitle="Processing live data" />
           <LiveStat label="Requests / sec" value={Math.round(requestsPerSec).toLocaleString()} unit="req/s" icon={Wifi} color="#f87171" subtitle="API throughput" />
@@ -253,8 +253,8 @@ export default function SystemPage() {
 
         {/* Network I/O */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <LiveGauge label="Network In" value={networkIn} max={10} unit="Gbps" color="#34d399" icon={Wifi} />
-          <LiveGauge label="Network Out" value={networkOut} max={10} unit="Gbps" color="#3b82f6" icon={Wifi} />
+          <LiveGauge label="Network In" value={networkIn} max={5} unit="Gbps" color="#34d399" icon={Wifi} />
+          <LiveGauge label="Network Out" value={networkOut} max={5} unit="Gbps" color="#3b82f6" icon={Wifi} />
         </div>
 
         {/* Data stats */}
