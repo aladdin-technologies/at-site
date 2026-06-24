@@ -100,45 +100,43 @@ function LiveStat({
   );
 }
 
+const AIRPORTS = ["LHR","CDG","AMS","FRA","IST","SIN","HND","NRT","ICN","HKG","JFK","LAX","ORD","DFW","ATL","DEN","SFO","SEA","MIA","DXB","DOH","BKK","DEL","BOM","KUL","SYD","MEL","AKL","ZRH","VIE","MUC","MAD","BCN","FCO","ARN","OSL","CPH","DUB","BRU","WAW","PRG","LIS","GRU","MEX","YYZ","EZE","SCL","CAI","JNB","NBO","TPE","MNL","CGK"];
+const ACTIONS_INDEX = ["indexed {n} new AIP documents","scanned {n} source PDFs","found {n} new regulatory filings","crawled {n} airport authority pages","discovered {n} updated charge tables","ingested {n} conditions-of-use updates"];
+const ACTIONS_VERIFY = ["landing charge formula validated","passenger charge rate confirmed","security fee cross-referenced","parking tariff verified against AIP","noise surcharge brackets confirmed","charge schedule effective dates verified","MTOW tier boundaries validated"];
+const ACTIONS_UPDATE = ["{n} revenue lines updated","parking charge rate revised","security screening fee adjusted","passenger service charge recalculated","emission charge coefficient updated","gate/aerobridge rate refreshed"];
+const ACTIONS_EXTRACT = ["extracted landing fees from AIP GEN 4.1","parsed noise category rate table","extracted {n} charge formulas from PDF","terminal navigation charge data extracted","fuel throughput rate extracted","ground handling fee structure parsed"];
+
+function randomActivity(): { msg: string; type: string } {
+  const airport = AIRPORTS[Math.floor(Math.random() * AIRPORTS.length)];
+  const roll = Math.random();
+  const n = Math.floor(Math.random() * 15) + 2;
+  let actions: string[], type: string;
+  if (roll < 0.3) { actions = ACTIONS_INDEX; type = "index"; }
+  else if (roll < 0.55) { actions = ACTIONS_VERIFY; type = "verify"; }
+  else if (roll < 0.8) { actions = ACTIONS_UPDATE; type = "update"; }
+  else { actions = ACTIONS_EXTRACT; type = "extract"; }
+  const action = actions[Math.floor(Math.random() * actions.length)].replace("{n}", String(n));
+  return { msg: `Agent ${airport}: ${action}`, type };
+}
+
 function ActivityLog() {
   const [logs, setLogs] = useState<{ time: string; msg: string; type: string }[]>([]);
-  const logRef = useRef(0);
-
-  const activities = [
-    { msg: "Agent LHR: indexed 12 new AIP documents", type: "index" },
-    { msg: "Agent SIN: charge schedule verified", type: "verify" },
-    { msg: "Agent CDG: 3 revenue lines updated", type: "update" },
-    { msg: "Agent JFK: parking charge rate confirmed", type: "verify" },
-    { msg: "Agent FRA: noise surcharge data extracted", type: "extract" },
-    { msg: "Agent DXB: terminal rental rates indexed", type: "index" },
-    { msg: "Agent NRT: landing charge formula validated", type: "verify" },
-    { msg: "Agent AMS: security charge updated", type: "update" },
-    { msg: "Agent ICN: passenger charge differential confirmed", type: "verify" },
-    { msg: "Agent BKK: 5 new source documents found", type: "index" },
-    { msg: "Agent SYD: cargo handling charges extracted", type: "extract" },
-    { msg: "Agent ORD: FY2026 rate book processed", type: "index" },
-    { msg: "Agent ZRH: weight class rates updated", type: "update" },
-    { msg: "Agent HKG: approach charge recalculated", type: "verify" },
-    { msg: "Agent DEL: AAI tariff schedule parsed", type: "extract" },
-  ];
 
   useEffect(() => {
-    const initial = Array.from({ length: 6 }, (_, i) => {
-      const a = activities[(logRef.current + i) % activities.length];
-      const t = new Date(Date.now() - (5 - i) * 8000);
+    const initial = Array.from({ length: 8 }, (_, i) => {
+      const a = randomActivity();
+      const t = new Date(Date.now() - (7 - i) * 4000);
       return { time: t.toLocaleTimeString(), msg: a.msg, type: a.type };
     });
     setLogs(initial);
-    logRef.current = 6;
 
     const id = setInterval(() => {
-      const a = activities[logRef.current % activities.length];
-      logRef.current++;
+      const a = randomActivity();
       setLogs((prev) => [
         { time: new Date().toLocaleTimeString(), msg: a.msg, type: a.type },
-        ...prev.slice(0, 7),
+        ...prev.slice(0, 9),
       ]);
-    }, 5000);
+    }, 3000 + Math.random() * 2000);
     return () => clearInterval(id);
   }, []);
 
