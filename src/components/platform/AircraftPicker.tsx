@@ -101,7 +101,8 @@ export function AircraftPicker() {
       {open && (
         <>
         <div className="fixed inset-0 z-[79] bg-black/40" onClick={() => setOpen(false)} />
-        <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-sm max-h-[70vh] rounded-xl border border-white/[0.08] bg-[#0a0f1e] shadow-2xl z-[80] overflow-hidden">
+        <div className="fixed inset-0 z-[80] flex items-center justify-center pointer-events-none">
+        <div className="w-[90vw] max-w-sm max-h-[70vh] rounded-xl border border-white/[0.08] bg-[#0a0f1e] shadow-2xl overflow-hidden pointer-events-auto">
           <div className="p-2 border-b border-white/[0.06]">
             <div className="relative">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" />
@@ -158,6 +159,7 @@ export function AircraftPicker() {
               );
             })}
           </div>
+        </div>
         </div>
         </>
       )}
