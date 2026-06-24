@@ -59,7 +59,7 @@ export function GlobeHero() {
           />
           <MetricCard
             title="Extraction progress"
-            value={38}
+            value={3}
             suffix="%"
           />
         </div>
