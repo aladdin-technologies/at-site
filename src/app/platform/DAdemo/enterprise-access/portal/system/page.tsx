@@ -201,17 +201,18 @@ export default function SystemPage() {
     if (header) (header as HTMLElement).style.display = "none";
     if (footer) (footer as HTMLElement).style.display = "none";
 
-    // Uptime counter
-    const start = Date.now() - (14 * 24 * 60 * 60 * 1000 + 7 * 60 * 60 * 1000 + 23 * 60 * 1000);
+    // Uptime counter — fixed start date, grows naturally over time
+    const start = new Date("2026-06-09T03:15:00Z").getTime();
     const tick = () => {
       const diff = Date.now() - start;
       const d = Math.floor(diff / 86400000);
       const h = Math.floor((diff % 86400000) / 3600000);
       const m = Math.floor((diff % 3600000) / 60000);
-      setUptime(`${d}d ${h}h ${m}m`);
+      const s = Math.floor((diff % 60000) / 1000);
+      setUptime(`${d}d ${h}h ${m}m ${s}s`);
     };
     tick();
-    const id = setInterval(tick, 60000);
+    const id = setInterval(tick, 1000);
 
     return () => {
       clearInterval(id);
