@@ -12,6 +12,7 @@ import {
 import { ArrowLeft, Search, ChevronRight } from "lucide-react";
 import { useCurrencyConverter } from "@/lib/useCurrency";
 import { AnimatedNumber } from "@/components/platform/AnimatedNumber";
+import { useSelectedAircraft } from "@/components/platform/AircraftPicker";
 
 interface ChargeRow {
   id: string;
@@ -71,6 +72,7 @@ export default function RateCardPage() {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortKey>("rate_desc");
   const { displayCurrency, convert } = useCurrencyConverter();
+  const selectedAircraft = useSelectedAircraft();
 
   useEffect(() => {
     if (sessionStorage.getItem("at-portal-auth") !== "1") {
@@ -318,7 +320,31 @@ export default function RateCardPage() {
                       <td className="px-4 py-3 text-right">
                         {(() => {
                           if (c.base_rate == null) return <span className="text-slate-500">—</span>;
-                          const converted = convert(c.base_rate, c.currency);
+
+                          // If aircraft selected, compute actual charge
+                          let displayRate = c.base_rate;
+                          let unitLabel = formatUnit(c.unit_basis, c.formula_type);
+                          let aircraftNote = "";
+
+                          if (selectedAircraft) {
+                            const basis = c.unit_basis || "";
+                            if (basis === "mtow_klbs") {
+                              displayRate = c.base_rate * (selectedAircraft.mtow_tonnes * 2.20462);
+                              aircraftNote = `${selectedAircraft.type_code} (${(selectedAircraft.mtow_tonnes * 2.20462).toFixed(0)} klbs)`;
+                            } else if (basis === "mtow_kg") {
+                              displayRate = c.base_rate * selectedAircraft.mtow_kg;
+                              aircraftNote = `${selectedAircraft.type_code} (${selectedAircraft.mtow_kg.toLocaleString()} kg)`;
+                            } else if (basis.includes("tonne") || basis.includes("mtow") || c.formula_type === "per_unit") {
+                              displayRate = c.base_rate * selectedAircraft.mtow_tonnes;
+                              aircraftNote = `${selectedAircraft.type_code} (${selectedAircraft.mtow_tonnes.toFixed(1)}t)`;
+                            } else if (basis === "per_movement" || c.formula_type === "lookup") {
+                              displayRate = c.base_rate;
+                              aircraftNote = `${selectedAircraft.type_code} (fixed per movement)`;
+                            }
+                            unitLabel = selectedAircraft ? "per landing" : unitLabel;
+                          }
+
+                          const converted = convert(displayRate, c.currency);
                           return (
                             <>
                               <AnimatedNumber value={converted.value} className="font-mono font-bold text-white" />
@@ -326,11 +352,16 @@ export default function RateCardPage() {
                                 {converted.currency}
                               </span>
                               <span className="block text-[10px] text-slate-500 mt-0.5">
-                                {formatUnit(c.unit_basis, c.formula_type)}
+                                {unitLabel}
                               </span>
+                              {aircraftNote && (
+                                <span className="block text-[9px] text-amber-400/60 mt-0.5">
+                                  {aircraftNote}
+                                </span>
+                              )}
                               {displayCurrency !== "AUTO" && converted.currency !== c.currency && (
                                 <span className="block text-[9px] text-slate-700 mt-0.5">
-                                  Originally {c.base_rate.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {c.currency}
+                                  Originally {displayRate.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {c.currency}
                                 </span>
                               )}
                             </>

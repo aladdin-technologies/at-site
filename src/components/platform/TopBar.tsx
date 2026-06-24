@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Radio, X, LogOut } from "lucide-react";
 import { CurrencyPicker } from "./CurrencyPicker";
+import { AircraftPicker } from "./AircraftPicker";
 
 const NAV_ITEMS = [
   { label: "Home", href: "/platform/DAdemo/enterprise-access/portal/dashboard", active: true },
@@ -61,6 +62,7 @@ export function TopBar() {
               <Radio size={12} className="animate-pulse" />
               Global agents online
             </a>
+            {showCurrency && <AircraftPicker />}
             {showCurrency && <CurrencyPicker />}
             <button
               onClick={() => setOpen(true)}
