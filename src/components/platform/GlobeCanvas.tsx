@@ -42,7 +42,7 @@ export function GlobeCanvas() {
     controls.zoomSpeed = 0.8;
     controls.autoRotate = true;
     controls.autoRotateSpeed = 0.4;
-    globe.pointOfView({ lat: 20, lng: 30, altitude: 2.2 });
+    globe.pointOfView({ lat: 20, lng: 30, altitude: 1.8 });
   }, [ready]);
 
   const pointsData = useMemo(
