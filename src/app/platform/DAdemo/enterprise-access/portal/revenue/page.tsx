@@ -6,7 +6,7 @@ import { TopBar } from "@/components/platform/TopBar";
 import { useRevenueLines } from "@/lib/useRevenueLines";
 import { RevenueLineCard } from "@/components/platform/RevenueLineCard";
 import { REVENUE_CATEGORY_COLORS } from "@/lib/supabase";
-import { Plane, ShoppingBag } from "lucide-react";
+import { Plane, ShoppingBag, ArrowLeft } from "lucide-react";
 
 function useCountUp(target: number, duration = 1400) {
   const [value, setValue] = useState(0);
@@ -84,6 +84,10 @@ export default function RevenuePage() {
       <TopBar />
 
       <div className="max-w-[1400px] mx-auto px-6 py-8">
+        <button onClick={() => router.back()} className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors mb-6">
+          <ArrowLeft size={16} /> Back
+        </button>
+
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-white">Revenue Intelligence</h1>

@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { TopBar } from "@/components/platform/TopBar";
-import { Database, Cpu, MemoryStick, HardDrive, Activity, Wifi, Clock, Server, Zap } from "lucide-react";
+import { Database, Cpu, MemoryStick, HardDrive, Activity, Wifi, Clock, Server, Zap, ArrowLeft } from "lucide-react";
 
 function useAnimatedValue(base: number, variance: number, interval = 2000) {
   const [value, setValue] = useState(base);
@@ -227,6 +227,10 @@ export default function SystemPage() {
       <TopBar />
 
       <div className="max-w-[1200px] mx-auto px-6 py-8">
+        <button onClick={() => router.back()} className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors mb-6">
+          <ArrowLeft size={16} /> Back
+        </button>
+
         <div className="flex items-center gap-3 mb-8">
           <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center">
             <Server size={20} className="text-cyan-400" />
