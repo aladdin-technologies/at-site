@@ -156,24 +156,6 @@ export default function RevenuePage() {
           </div>
         </div>
 
-        {/* System Insight */}
-        <div className="max-w-3xl mx-auto rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-sm p-6">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-            <p className="text-[11px] font-semibold tracking-wider uppercase text-cyan-400">
-              System Insight
-            </p>
-          </div>
-          <p className="text-sm text-slate-400 leading-relaxed">
-            {lines.length} revenue lines mapped across aeronautical and
-            non-aeronautical categories based on ICAO Doc 9082 and ACI ANARA
-            frameworks. This taxonomy forms the foundation for benchmarking
-            airport revenue structures across 4,000+ airports.
-          </p>
-          <div className="mt-3 inline-flex items-center gap-1.5 text-[10px] font-semibold tracking-wider uppercase text-slate-600 bg-white/[0.04] px-2.5 py-1 rounded-full">
-            Next: Per-Airport Charge Data
-          </div>
-        </div>
       </div>
     </div>
   );

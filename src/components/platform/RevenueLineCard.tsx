@@ -108,30 +108,37 @@ const ICON_MAP: Record<string, LucideIcon> = {
   badge: Badge,
 };
 
+const ACTIVE_SLUGS = new Set(["landing_runway"]);
+
 export function RevenueLineCard({ line }: { line: RevenueLineRow }) {
   const Icon = ICON_MAP[line.icon_name ?? ""] ?? CircleDot;
   const color = REVENUE_CATEGORY_COLORS[line.category];
   const isAero = line.category === "aero";
+  const isActive = ACTIVE_SLUGS.has(line.slug);
+
+  const Tag = isActive ? "a" : "div";
 
   return (
-    <a
-      href={`/platform/DAdemo/enterprise-access/portal/revenue/${line.slug}`}
-      className={`group rounded-2xl border p-5 transition-all duration-300 cursor-pointer block overflow-hidden ${
-        isAero
-          ? "border-white/[0.06] bg-white/[0.02] hover:border-cyan-500/20 hover:bg-white/[0.04]"
-          : "border-white/[0.06] bg-white/[0.02] hover:border-violet-500/20 hover:bg-white/[0.04]"
+    <Tag
+      {...(isActive ? { href: `/platform/DAdemo/enterprise-access/portal/revenue/${line.slug}` } : {})}
+      className={`group rounded-2xl border p-5 transition-all duration-300 block overflow-hidden ${
+        isActive
+          ? isAero
+            ? "border-white/[0.06] bg-white/[0.02] hover:border-cyan-500/20 hover:bg-white/[0.04] cursor-pointer"
+            : "border-white/[0.06] bg-white/[0.02] hover:border-violet-500/20 hover:bg-white/[0.04] cursor-pointer"
+          : "border-white/[0.04] bg-white/[0.01] opacity-40 cursor-default"
       }`}
     >
       <div className="flex items-start gap-4">
         <div
           className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-          style={{ backgroundColor: color + "15" }}
+          style={{ backgroundColor: color + (isActive ? "15" : "08") }}
         >
-          <Icon size={18} style={{ color }} />
+          <Icon size={18} style={{ color: isActive ? color : "#475569" }} />
         </div>
         <div className="min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <h3 className="text-sm font-semibold text-white truncate">{line.name}</h3>
+            <h3 className={`text-sm font-semibold truncate ${isActive ? "text-white" : "text-slate-600"}`}>{line.name}</h3>
             {line.subcategory && (
               <span className="text-[9px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full bg-white/[0.05] text-slate-500">
                 {line.subcategory}
@@ -143,6 +150,6 @@ export function RevenueLineCard({ line }: { line: RevenueLineRow }) {
           </p>
         </div>
       </div>
-    </a>
+    </Tag>
   );
 }
