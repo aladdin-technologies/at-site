@@ -119,7 +119,14 @@ export default function RateCardPage() {
           (c.charge_name && c.charge_name.toLowerCase().includes(q)),
       );
     }
-    const sorted = [...list];
+    // Pin ICN, NRT at top and LHR at bottom
+    const pinTop = ["ICN", "NRT"];
+    const pinBottom = ["LHR"];
+    const top = list.filter((c) => pinTop.includes(c.airports.iata_code || ""));
+    const bottom = list.filter((c) => pinBottom.includes(c.airports.iata_code || ""));
+    const rest = list.filter((c) => !pinTop.includes(c.airports.iata_code || "") && !pinBottom.includes(c.airports.iata_code || ""));
+
+    const sorted = [...rest];
     switch (sort) {
       case "rate_desc":
         sorted.sort((a, b) => (b.base_rate ?? 0) - (a.base_rate ?? 0));
@@ -138,7 +145,9 @@ export default function RateCardPage() {
         );
         break;
     }
-    return sorted;
+    // Pin order: ICN, NRT first → rest sorted → LHR last
+    top.sort((a, b) => pinTop.indexOf(a.airports.iata_code || "") - pinTop.indexOf(b.airports.iata_code || ""));
+    return [...top, ...sorted, ...bottom];
   }, [charges, search, sort]);
 
   const uniqueAirports = useMemo(
@@ -234,10 +243,6 @@ export default function RateCardPage() {
         </div>
 
         {/* Results */}
-        <p className="text-[11px] text-slate-500 font-medium mb-4">
-          {filtered.length} charge records
-        </p>
-
         {filtered.length === 0 ? (
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-12 text-center">
             <p className="text-slate-500 text-sm">
