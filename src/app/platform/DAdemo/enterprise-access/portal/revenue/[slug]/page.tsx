@@ -239,28 +239,6 @@ export default function RateCardPage() {
               className="w-full pl-11 pr-4 py-3 rounded-xl border border-white/[0.06] bg-white/[0.03] text-sm text-white placeholder-slate-600 outline-none focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/20 transition-all"
             />
           </div>
-          <div className="flex gap-2">
-            {(
-              [
-                ["rate_desc", "Highest rate"],
-                ["rate_asc", "Lowest rate"],
-                ["name", "Name A-Z"],
-                ["country", "Country"],
-              ] as [SortKey, string][]
-            ).map(([key, label]) => (
-              <button
-                key={key}
-                onClick={() => setSort(key)}
-                className={`px-3 py-2 rounded-lg text-[11px] font-medium transition-all ${
-                  sort === key
-                    ? "bg-cyan-500/15 text-cyan-400 border border-cyan-500/25"
-                    : "bg-white/[0.03] text-slate-500 border border-white/[0.06] hover:bg-white/[0.05]"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* Results */}
