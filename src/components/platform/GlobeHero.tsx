@@ -80,8 +80,8 @@ export function GlobeHero() {
             </div>
             <span className="text-[10px] text-slate-600">View live metrics →</span>
           </div>
-          <p className="text-sm text-slate-400 leading-relaxed line-clamp-2">
-            All systems operational. 4 of 4 systems running.
+          <p className="text-sm text-slate-400 leading-relaxed">
+            4 of 4 systems operational
           </p>
         </a>
       </div>
