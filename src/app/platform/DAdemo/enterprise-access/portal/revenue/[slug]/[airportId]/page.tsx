@@ -576,7 +576,6 @@ export default function ChargeDetailPage() {
                       <thead>
                         <tr className="border-b border-white/[0.06] bg-white/[0.02]">
                           <th className="text-left px-4 py-2.5 text-[10px] font-semibold tracking-wider uppercase text-slate-500">Aircraft</th>
-                          <th className="text-right px-4 py-2.5 text-[10px] font-semibold tracking-wider uppercase text-slate-500 hidden sm:table-cell">MTOW</th>
                           <th className="text-right px-4 py-2.5 text-[10px] font-semibold tracking-wider uppercase text-slate-500">Est. charge</th>
                         </tr>
                       </thead>
