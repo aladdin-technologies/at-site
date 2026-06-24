@@ -44,11 +44,7 @@ export function IntroSplash({ onComplete }: { onComplete: () => void }) {
       {/* Content */}
       <div className="relative z-10 flex flex-col items-center px-6">
         {/* Logo */}
-        <div className="w-14 h-14 rounded-2xl bg-cyan-500/20 flex items-center justify-center mb-8">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-cyan-400">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          </svg>
-        </div>
+        <img src="/icon-192.png" alt="" className="w-14 h-14 rounded-2xl mb-8" />
 
         <h1 className="text-3xl sm:text-4xl font-bold text-white tracking-wide mb-2">
           AIRPORTRONICS

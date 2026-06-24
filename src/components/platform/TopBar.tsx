@@ -31,21 +31,7 @@ export function TopBar() {
         <div className="max-w-[1400px] mx-auto flex items-center justify-between h-14 px-6">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-cyan-500/20 flex items-center justify-center">
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="text-cyan-400"
-                >
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                </svg>
-              </div>
+              <img src="/icon-192.png" alt="" className="w-7 h-7 rounded-lg" />
               <span className="text-sm font-bold tracking-wide text-white">
                 AIRPORTRONICS
               </span>
