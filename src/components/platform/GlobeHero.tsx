@@ -64,22 +64,26 @@ export function GlobeHero() {
           />
         </div>
 
-        <div className="max-w-3xl mx-auto rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-sm p-6 mb-4">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-            <p className="text-[11px] font-semibold tracking-wider uppercase text-cyan-400">
-              System Insight
-            </p>
+        <a
+          href="/platform/DAdemo/enterprise-access/portal/system"
+          className="block max-w-3xl mx-auto rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-sm p-6 mb-4 hover:border-cyan-500/20 hover:bg-white/[0.04] transition-all duration-300 cursor-pointer overflow-hidden"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="relative flex items-center justify-center w-4 h-4">
+                <span className="absolute inset-0 rounded-full bg-emerald-400 animate-[ping_2s_ease-in-out_infinite] opacity-40" />
+                <span className="relative w-2 h-2 rounded-full bg-emerald-400" />
+              </span>
+              <p className="text-[11px] font-semibold tracking-wider uppercase text-emerald-400">
+                System Online
+              </p>
+            </div>
+            <span className="text-[10px] text-slate-600">View live metrics →</span>
           </div>
-          <p className="text-sm text-slate-400 leading-relaxed">
-            {stats.total > 0
-              ? `${stats.total.toLocaleString()} airports mapped globally. ${stats.agentsDeployed.toLocaleString()} intelligence agents deployed across international and regional airports. ${stats.activeAgents.toLocaleString()} agents actively indexing public data. The next layer is converting raw public sources into structured, comparable benchmarking metrics.`
-              : "The system can collect large volumes of public airport intelligence. The next layer is converting raw public sources into structured, comparable benchmarking metrics."}
+          <p className="text-sm text-slate-400 leading-relaxed line-clamp-2">
+            All systems operational. {stats.total > 0 ? `${stats.total.toLocaleString()} airports mapped, ${stats.agentsDeployed.toLocaleString()} agents deployed.` : "Infrastructure running."}
           </p>
-          <div className="mt-3 inline-flex items-center gap-1.5 text-[10px] font-semibold tracking-wider uppercase text-slate-600 bg-white/[0.04] px-2.5 py-1 rounded-full">
-            Next Scaling Layer
-          </div>
-        </div>
+        </a>
       </div>
     </section>
   );
