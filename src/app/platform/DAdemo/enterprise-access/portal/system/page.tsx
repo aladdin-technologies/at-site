@@ -252,10 +252,14 @@ export default function SystemPage() {
 
         {/* Static + semi-live stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <LiveStat label="Storage Used" value="43.2" unit="TB" icon={HardDrive} color="#f59e0b" subtitle="of 50 TB (86.4%)" />
+          <LiveStat label="Total Storage" value="43.2" unit="TB" icon={HardDrive} color="#f59e0b" subtitle="of 50 TB used (86.4%)" />
+          <LiveStat label="Data Collected" value="41.8" unit="TB" icon={Database} color="#a78bfa" subtitle="Raw AIP documents, PDFs, source files" />
+          <LiveStat label="Data Processed" value="1.2" unit="TB" icon={Database} color="#34d399" subtitle="Structured, indexed, query-ready" />
+          <LiveStat label="System Overhead" value="0.2" unit="TB" icon={Server} color="#64748b" subtitle="OS, runtime, logs, cache" />
           <LiveStat label="Uptime" value={uptime} unit="" icon={Clock} color="#34d399" subtitle="Since last restart" />
           <LiveStat label="Active Agents" value={Math.round(activeAgents).toLocaleString()} unit="" icon={Zap} color="#22d3ee" subtitle="Processing live data" />
           <LiveStat label="Requests / sec" value={Math.round(requestsPerSec).toLocaleString()} unit="req/s" icon={Wifi} color="#f87171" subtitle="API throughput" />
+          <LiveStat label="Processing Rate" value="2.8" unit="%" icon={Activity} color="#fbbf24" subtitle="1.2 TB processed of 41.8 TB collected" />
         </div>
 
         {/* Network I/O */}
