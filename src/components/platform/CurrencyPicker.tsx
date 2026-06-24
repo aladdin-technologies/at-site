@@ -91,6 +91,7 @@ export function CurrencyPicker() {
       </button>
 
       {open && (
+        <>
         <div className="fixed inset-0 z-[79] bg-black/40" onClick={() => setOpen(false)} />
         <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-sm max-h-[70vh] rounded-xl border border-white/[0.08] bg-[#0a0f1e] shadow-2xl z-[80] overflow-hidden">
           <div className="p-2 border-b border-white/[0.06]">
@@ -137,6 +138,7 @@ export function CurrencyPicker() {
             })}
           </div>
         </div>
+        </>
       )}
     </div>
   );
