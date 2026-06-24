@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Radio, X, LogOut } from "lucide-react";
 import { CurrencyPicker } from "./CurrencyPicker";
 
@@ -15,7 +15,9 @@ const NAV_ITEMS = [
 
 export function TopBar() {
   const router = useRouter();
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const showCurrency = pathname?.includes("/revenue") === true;
 
   function handleLogout() {
     sessionStorage.removeItem("at-portal-auth");
@@ -59,7 +61,7 @@ export function TopBar() {
               <Radio size={12} className="animate-pulse" />
               Global agents online
             </a>
-            <CurrencyPicker />
+            {showCurrency && <CurrencyPicker />}
             <button
               onClick={() => setOpen(true)}
               className="flex flex-col justify-center items-center gap-[5px] w-9 h-9 rounded-lg hover:bg-white/[0.06] transition-colors"
