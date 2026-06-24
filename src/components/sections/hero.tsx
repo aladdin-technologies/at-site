@@ -60,10 +60,12 @@ export function Hero() {
           transition={{ duration: 0.8, delay: 0.45, ease: "easeOut" }}
           className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row"
         >
-          <Button size="lg">
-            Explore the Platform
-            <ArrowRight className="h-4 w-4" />
-          </Button>
+          <a href="/platform/DAdemo/enterprise-access/portal/verify">
+            <Button size="lg">
+              Explore the Platform
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </a>
           <Button variant="secondary" size="lg">
             View Research
           </Button>

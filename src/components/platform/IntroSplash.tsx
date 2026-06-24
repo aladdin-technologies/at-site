@@ -40,8 +40,14 @@ export function IntroSplash({ onComplete }: { onComplete: () => void }) {
       {/* Dark overlay */}
       <div className="absolute inset-0 bg-black/60" />
 
-      {/* Content */}
-      <div className="relative z-10 text-center px-6">
+      {/* Content — floating animation */}
+      <div className="relative z-10 text-center px-6 animate-[float_3s_ease-in-out_infinite]">
+        <style>{`
+          @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+          }
+        `}</style>
         {/* Logo */}
         <div className="flex items-center justify-center gap-3 mb-6">
           <div className="w-12 h-12 rounded-2xl bg-cyan-500/20 flex items-center justify-center">
