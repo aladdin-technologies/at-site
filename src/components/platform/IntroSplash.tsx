@@ -90,21 +90,21 @@ export function IntroSplash({ onComplete }: { onComplete: () => void }) {
               {Math.round(progress)}%
             </span>
           </div>
-          <div className="h-2 rounded-full bg-white/[0.1] overflow-hidden">
+          <div className="h-3 rounded-full bg-white/20 overflow-hidden shadow-[0_0_10px_rgba(34,211,238,0.3)]">
             <div
-              className="h-full rounded-full transition-all duration-100"
+              className="h-full rounded-full transition-all duration-100 shadow-[0_0_15px_rgba(34,211,238,0.6)]"
               style={{
                 width: `${progress}%`,
-                background: "linear-gradient(90deg, #06b6d4, #22d3ee, #67e8f9, #22d3ee, #06b6d4)",
-                backgroundSize: "300% 100%",
-                animation: "barGlow 1.2s linear infinite",
+                background: "linear-gradient(90deg, #0891b2, #22d3ee, #ffffff, #22d3ee, #0891b2)",
+                backgroundSize: "200% 100%",
+                animation: "barGlow 1s linear infinite",
               }}
             />
           </div>
           <style>{`
             @keyframes barGlow {
               0% { background-position: 0% 0; }
-              100% { background-position: 300% 0; }
+              100% { background-position: 200% 0; }
             }
           `}</style>
         </div>
