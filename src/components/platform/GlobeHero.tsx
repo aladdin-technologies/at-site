@@ -81,7 +81,7 @@ export function GlobeHero() {
             <span className="text-[10px] text-slate-600">View live metrics →</span>
           </div>
           <p className="text-sm text-slate-400 leading-relaxed line-clamp-2">
-            All systems operational. {stats.total > 0 ? `${stats.total.toLocaleString()} airports mapped, ${stats.agentsDeployed.toLocaleString()} agents deployed.` : "Infrastructure running."}
+            All systems operational. 4 of 4 systems running.
           </p>
         </a>
       </div>
