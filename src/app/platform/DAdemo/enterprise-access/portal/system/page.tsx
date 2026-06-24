@@ -240,7 +240,7 @@ export default function SystemPage() {
               <span className="absolute inset-0 rounded-full bg-emerald-400 animate-[ping_2s_ease-in-out_infinite] opacity-40" />
               <span className="relative w-2 h-2 rounded-full bg-emerald-400" />
             </span>
-            <span className="text-[11px] text-emerald-400 font-medium">All systems operational</span>
+            <span className="text-[11px] text-emerald-400 font-medium">4 of 4 systems operational</span>
           </div>
         </div>
 
