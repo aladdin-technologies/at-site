@@ -276,8 +276,8 @@ export default function RateCardPage() {
           </div>
         ) : (
           <div className="rounded-xl border border-white/[0.06] overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+            <div>
+              <table className="w-full text-sm table-fixed">
                 <thead>
                   <tr className="border-b border-white/[0.06] bg-white/[0.02]">
                     <th className="text-left px-4 py-3 text-[11px] font-semibold tracking-wider uppercase text-slate-500">
@@ -289,10 +289,6 @@ export default function RateCardPage() {
                     <th className="text-right px-4 py-3 text-[11px] font-semibold tracking-wider uppercase text-slate-500">
                       Rate
                     </th>
-                    <th className="text-left px-4 py-3 text-[11px] font-semibold tracking-wider uppercase text-slate-500 hidden lg:table-cell">
-                      Direction
-                    </th>
-                    <th className="w-8"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -367,15 +363,6 @@ export default function RateCardPage() {
                             </>
                           );
                         })()}
-                      </td>
-                      <td className="px-4 py-3 text-slate-500 text-[11px] capitalize hidden lg:table-cell">
-                        {c.direction || "—"}
-                      </td>
-                      <td className="px-4 py-3">
-                        <ChevronRight
-                          size={14}
-                          className="text-slate-700 group-hover:text-slate-400 transition-colors"
-                        />
                       </td>
                     </tr>
                   ))}
