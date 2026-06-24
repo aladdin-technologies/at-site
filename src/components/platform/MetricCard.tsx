@@ -43,8 +43,13 @@ export function MetricCard({
   href?: string;
 }) {
   const counter = useCountUp(value);
-  const content = (
-    <>
+
+  return (
+    <div
+      ref={counter.ref}
+      className={`relative rounded-2xl border border-white/[0.06] bg-white/[0.03] backdrop-blur-sm p-4 overflow-hidden hover:border-cyan-500/20 hover:bg-white/[0.05] transition-all duration-300 ${href ? "cursor-pointer" : ""}`}
+    >
+      {href && <a href={href} className="absolute inset-0 z-10" />}
       <p className="text-[10px] font-semibold tracking-wider uppercase text-slate-500 mb-2 truncate">
         {title}
       </p>
@@ -53,26 +58,8 @@ export function MetricCard({
         {suffix}
       </p>
       {subtitle && (
-        <p className="text-[12px] text-slate-500 mt-1">{subtitle}</p>
+        <p className="text-[11px] text-slate-500 mt-1 truncate">{subtitle}</p>
       )}
-    </>
-  );
-
-  const className = `relative group rounded-2xl border border-white/[0.06] bg-white/[0.03] backdrop-blur-sm p-4 overflow-hidden hover:border-cyan-500/20 hover:bg-white/[0.05] transition-all duration-300 ${href ? "cursor-pointer" : ""}`;
-
-  if (href) {
-    return (
-      <div ref={counter.ref}>
-        <a href={href} className={className}>
-          {content}
-        </a>
-      </div>
-    );
-  }
-
-  return (
-    <div ref={counter.ref} className={className}>
-      {content}
     </div>
   );
 }
