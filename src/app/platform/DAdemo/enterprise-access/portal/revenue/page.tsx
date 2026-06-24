@@ -67,14 +67,6 @@ export default function RevenuePage() {
       return;
     }
     setAuthorized(true);
-    const header = document.querySelector("header:not([class])");
-    const footer = document.querySelector("footer");
-    if (header) (header as HTMLElement).style.display = "none";
-    if (footer) (footer as HTMLElement).style.display = "none";
-    return () => {
-      if (header) (header as HTMLElement).style.display = "";
-      if (footer) (footer as HTMLElement).style.display = "";
-    };
   }, [router]);
 
   if (!authorized) return null;

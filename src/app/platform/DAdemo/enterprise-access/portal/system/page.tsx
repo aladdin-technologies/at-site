@@ -194,10 +194,6 @@ export default function SystemPage() {
       return;
     }
     setAuthorized(true);
-    const header = document.querySelector("header:not([class])");
-    const footer = document.querySelector("footer");
-    if (header) (header as HTMLElement).style.display = "none";
-    if (footer) (footer as HTMLElement).style.display = "none";
 
     // Uptime counter — fixed start date, grows naturally over time
     const start = new Date("2026-06-09T03:15:00Z").getTime();
@@ -214,8 +210,6 @@ export default function SystemPage() {
 
     return () => {
       clearInterval(id);
-      if (header) (header as HTMLElement).style.display = "";
-      if (footer) (footer as HTMLElement).style.display = "";
     };
   }, [router]);
 
