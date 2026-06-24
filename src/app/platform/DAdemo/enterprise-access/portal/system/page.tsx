@@ -184,8 +184,8 @@ export default function SystemPage() {
   const ramJitter = useAnimatedValue(0, 0.8, 1800);
   const ramUsage = ramBase + ramJitter;
   // Network correlates with CPU/requests
-  const networkIn = 3.2 + (cpuBase - 84) * 0.08 + useAnimatedValue(0, 0.3, 1600);
-  const networkOut = 2.6 + (cpuBase - 84) * 0.06 + useAnimatedValue(0, 0.2, 2000);
+  const networkIn = 3.9 + (cpuBase - 84) * 0.06 + useAnimatedValue(0, 0.2, 1600);
+  const networkOut = 3.6 + (cpuBase - 84) * 0.05 + useAnimatedValue(0, 0.15, 2000);
   // Active agents and requests follow CPU load
   const activeAgents = 2520 + (cpuBase - 84) * 8 + useAnimatedValue(0, 15, 2500);
   const requestsPerSec = 1100 + (cpuBase - 84) * 20 + useAnimatedValue(0, 60, 1400);
