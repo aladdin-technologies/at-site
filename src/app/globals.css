@@ -84,6 +84,11 @@ body {
 /* ─── Smooth scrolling ─── */
 html {
   scroll-behavior: smooth;
+  overscroll-behavior-y: contain;
+}
+
+body {
+  overscroll-behavior-y: contain;
 }
 
 /* ─── Hide scrollbar on horizontal scroll containers ─── */

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { ChevronDown, Search, Check } from "lucide-react";
 import {
   useDisplayCurrency,
@@ -90,10 +91,10 @@ export function CurrencyPicker() {
         <ChevronDown size={12} className={`text-slate-500 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
-      {open && (
+      {open && createPortal(
         <>
-        <div className="fixed inset-0 z-[79] bg-black/40" onClick={() => setOpen(false)} />
-        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4" onClick={() => setOpen(false)}>
+        <div className="fixed inset-0 z-[9998] bg-black/50" onClick={() => setOpen(false)} />
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" onClick={() => setOpen(false)}>
         <div className="w-full max-w-sm max-h-[70vh] rounded-xl border border-white/[0.08] bg-[#0a0f1e] shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
           <div className="p-2 border-b border-white/[0.06]">
             <div className="relative">
@@ -140,7 +141,8 @@ export function CurrencyPicker() {
           </div>
         </div>
         </div>
-        </>
+        </>,
+        document.body
       )}
     </div>
   );

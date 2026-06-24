@@ -58,28 +58,31 @@ export function PullToRefresh({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      {/* Pull indicator — rendered outside content flow */}
+      {/* iOS-style pull indicator */}
       {pullY > 5 && (
         <div
           className="fixed left-1/2 -translate-x-1/2 z-[90] pointer-events-none"
           style={{ top: `${Math.max(pullY - 30, 10)}px`, opacity: progress }}
         >
-          <div className="w-10 h-10 rounded-full bg-[#0a0f1e] border border-white/[0.15] flex items-center justify-center shadow-2xl">
-            <svg
-              viewBox="0 0 24 24"
-              width="20"
-              height="20"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className={`text-cyan-400 ${refreshing ? "animate-spin" : ""}`}
-              style={refreshing ? undefined : { transform: `rotate(${progress * 360}deg)` }}
-            >
-              <path d="M21 12a9 9 0 1 1-9-9" />
-              <polyline points="21 3 21 9 15 9" />
-            </svg>
+          <div className="w-8 h-8 flex items-center justify-center">
+            {refreshing ? (
+              <svg className="animate-spin w-6 h-6" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.2)" strokeWidth="3" fill="none" />
+                <path fill="none" stroke="#22d3ee" strokeWidth="3" strokeLinecap="round" d="M12 2a10 10 0 0 1 10 10" />
+              </svg>
+            ) : (
+              <svg className="w-6 h-6" viewBox="0 0 24 24" style={{ transform: `rotate(${progress * 270}deg)` }}>
+                <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.15)" strokeWidth="3" fill="none" />
+                <circle
+                  cx="12" cy="12" r="10"
+                  stroke="#22d3ee"
+                  strokeWidth="3"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeDasharray={`${progress * 63} 63`}
+                />
+              </svg>
+            )}
           </div>
         </div>
       )}
