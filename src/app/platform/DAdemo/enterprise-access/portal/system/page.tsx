@@ -176,12 +176,19 @@ export default function SystemPage() {
   const [authorized, setAuthorized] = useState(false);
   const [uptime, setUptime] = useState("0d 0h 0m");
 
-  const cpuUsage = useAnimatedValue(84, 6, 1500);
-  const ramUsage = useAnimatedValue(57.8, 1.2, 3000);
-  const networkIn = useAnimatedValue(3.8, 0.5, 2000);
-  const networkOut = useAnimatedValue(3.2, 0.4, 2500);
-  const activeAgents = useAnimatedValue(2580, 25, 4000);
-  const requestsPerSec = useAnimatedValue(1247, 150, 1800);
+  // CPU drives everything — RAM, network, requests all correlate
+  const cpuBase = useAnimatedValue(84, 7, 1200);
+  const cpuUsage = cpuBase;
+  // RAM follows CPU with slight delay and smaller variance
+  const ramBase = 52 + (cpuBase - 84) * 0.15;
+  const ramJitter = useAnimatedValue(0, 0.8, 1800);
+  const ramUsage = ramBase + ramJitter;
+  // Network correlates with CPU/requests
+  const networkIn = 3.2 + (cpuBase - 84) * 0.08 + useAnimatedValue(0, 0.3, 1600);
+  const networkOut = 2.6 + (cpuBase - 84) * 0.06 + useAnimatedValue(0, 0.2, 2000);
+  // Active agents and requests follow CPU load
+  const activeAgents = 2520 + (cpuBase - 84) * 8 + useAnimatedValue(0, 15, 2500);
+  const requestsPerSec = 1100 + (cpuBase - 84) * 20 + useAnimatedValue(0, 60, 1400);
 
   useEffect(() => {
     if (sessionStorage.getItem("at-portal-auth") !== "1") {
