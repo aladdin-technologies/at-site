@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, Search, Check } from "lucide-react";
 import {
@@ -52,20 +52,9 @@ function FlagImg({ code }: { code: string }) {
   );
 }
 
-export function CurrencyPicker() {
-  const displayCurrency = useDisplayCurrency();
+function PickerModal({ onClose, onSelect, selected }: { onClose: () => void; onSelect: (code: string) => void; selected: string }) {
   const rates = useExchangeRates();
-  const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
 
   const allCodes = Object.keys(rates).sort();
   const majorSet = new Set(MAJORS);
@@ -78,70 +67,80 @@ export function CurrencyPicker() {
       })
     : ordered;
 
+  return (
+    <>
+      <div style={{ position: "fixed", inset: 0, zIndex: 99998, background: "rgba(0,0,0,0.5)" }} onMouseDown={onClose} onTouchEnd={onClose} />
+      <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 99999, width: "90vw", maxWidth: 380, maxHeight: "70vh", borderRadius: 12, border: "1px solid rgba(255,255,255,0.08)", background: "#0a0f1e", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+        <div style={{ padding: 8, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <div style={{ position: "relative" }}>
+            <Search size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#475569" }} />
+            <input
+              type="text"
+              placeholder={`Search ${allCodes.length}+ currencies`}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              autoFocus
+              style={{ width: "100%", paddingLeft: 36, paddingRight: 12, paddingTop: 8, paddingBottom: 8, borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", fontSize: 14, color: "white", outline: "none" }}
+            />
+          </div>
+        </div>
+        <div style={{ overflowY: "auto", flex: 1 }}>
+          {filtered.map((code) => {
+            const isSelected = code === selected;
+            return (
+              <button
+                key={code}
+                onMouseDown={(e) => { e.stopPropagation(); onSelect(code); }}
+                onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); onSelect(code); }}
+                style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", textAlign: "left", background: isSelected ? "rgba(34,211,238,0.1)" : "transparent", border: "none", cursor: "pointer", color: "white" }}
+              >
+                {code === "AUTO" ? (
+                  <span style={{ width: 20, height: 16, borderRadius: 2, background: "rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "#64748b" }}>A</span>
+                ) : (
+                  <FlagImg code={code} />
+                )}
+                <span style={{ fontFamily: "monospace", fontSize: 14, fontWeight: 600, width: 40 }}>
+                  {code === "AUTO" ? "—" : code}
+                </span>
+                <span style={{ fontSize: 14, color: "#94a3b8", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {currencyName(code)}
+                </span>
+                {isSelected && <Check size={14} style={{ color: "#22d3ee", flexShrink: 0 }} />}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </>
+  );
+}
+
+export function CurrencyPicker() {
+  const displayCurrency = useDisplayCurrency();
+  const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
+
   const label = displayCurrency === "AUTO" ? "Auto" : displayCurrency;
 
   return (
-    <div ref={ref} className="relative">
+    <div>
       <button
-        onClick={() => { setOpen(!open); setSearch(""); }}
+        onClick={() => setOpen(!open)}
         className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] transition-colors"
       >
         {displayCurrency !== "AUTO" && <FlagImg code={displayCurrency} />}
         <span className="text-[11px] font-mono text-slate-300">{label}</span>
-        <ChevronDown size={12} className={`text-slate-500 transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown size={12} className="text-slate-500" />
       </button>
 
-      {open && createPortal(
-        <>
-        <div className="fixed inset-0 z-[9998] bg-black/50" onClick={() => setOpen(false)} />
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none">
-        <div className="w-full max-w-sm max-h-[70vh] rounded-xl border border-white/[0.08] bg-[#0a0f1e] shadow-2xl overflow-hidden pointer-events-auto">
-          <div className="p-2 border-b border-white/[0.06]">
-            <div className="relative">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" />
-              <input
-                type="text"
-                placeholder={`Search ${allCodes.length}+ currencies`}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-sm text-white placeholder-slate-600 outline-none focus:border-cyan-500/30"
-                autoFocus
-              />
-            </div>
-          </div>
-          <div className="overflow-y-auto max-h-[calc(70vh-60px)]">
-            {filtered.map((code) => {
-              const isSelected = code === displayCurrency;
-              return (
-                <button
-                  key={code}
-                  onClick={() => {
-                    setDisplayCurrency(code);
-                    setOpen(false);
-                  }}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${
-                    isSelected ? "bg-cyan-500/10" : "hover:bg-white/[0.04]"
-                  }`}
-                >
-                  {code === "AUTO" ? (
-                    <span className="w-5 h-4 rounded-sm bg-white/[0.06] flex items-center justify-center text-[9px] text-slate-500">A</span>
-                  ) : (
-                    <FlagImg code={code} />
-                  )}
-                  <span className="font-mono text-sm font-semibold text-white w-10">
-                    {code === "AUTO" ? "—" : code}
-                  </span>
-                  <span className="text-sm text-slate-400 flex-1 truncate">
-                    {currencyName(code)}
-                  </span>
-                  {isSelected && <Check size={14} className="text-cyan-400 shrink-0" />}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-        </div>
-        </>,
+      {open && mounted && createPortal(
+        <PickerModal
+          selected={displayCurrency}
+          onClose={() => setOpen(false)}
+          onSelect={(code) => { setDisplayCurrency(code); setOpen(false); }}
+        />,
         document.body
       )}
     </div>

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, Search, Check, Plane } from "lucide-react";
+import { Search, Check, Plane } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 interface Aircraft {
@@ -46,26 +46,15 @@ export function useSelectedAircraft() {
   return aircraft;
 }
 
-export function AircraftPicker() {
-  const [open, setOpen] = useState(false);
+function PickerModal({ onClose, onSelect, selected }: { onClose: () => void; onSelect: (a: Aircraft | null) => void; selected: Aircraft | null }) {
   const [search, setSearch] = useState("");
   const [aircraftList, setAircraftList] = useState<Aircraft[]>(cachedAircraft ?? []);
-  const selected = useSelectedAircraft();
-  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (cachedAircraft) { setAircraftList(cachedAircraft); return; }
     supabase.from("simulation_aircraft").select("*").order("sort_order").then(({ data }) => {
       if (data) { cachedAircraft = data as Aircraft[]; setAircraftList(data as Aircraft[]); }
     });
-  }, []);
-
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
   const filtered = useMemo(() => {
@@ -87,82 +76,94 @@ export function AircraftPicker() {
     return groups;
   }, [filtered]);
 
-  const label = selected ? selected.type_code : "All";
+  return (
+    <>
+      <div style={{ position: "fixed", inset: 0, zIndex: 99998, background: "rgba(0,0,0,0.5)" }} onMouseDown={onClose} onTouchEnd={onClose} />
+      <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%, -50%)", zIndex: 99999, width: "90vw", maxWidth: 380, maxHeight: "70vh", borderRadius: 12, border: "1px solid rgba(255,255,255,0.08)", background: "#0a0f1e", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+        <div style={{ padding: 8, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <div style={{ position: "relative" }}>
+            <Search size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#475569" }} />
+            <input
+              type="text"
+              placeholder="Search aircraft..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              autoFocus
+              style={{ width: "100%", paddingLeft: 36, paddingRight: 12, paddingTop: 8, paddingBottom: 8, borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", fontSize: 14, color: "white", outline: "none" }}
+            />
+          </div>
+        </div>
+        <div style={{ overflowY: "auto", flex: 1 }}>
+          {/* None option */}
+          <button
+            onMouseDown={(e) => { e.stopPropagation(); onSelect(null); }}
+            onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); onSelect(null); }}
+            style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", textAlign: "left", background: !selected ? "rgba(34,211,238,0.1)" : "transparent", border: "none", cursor: "pointer", color: "white" }}
+          >
+            <span style={{ width: 20, height: 16, borderRadius: 2, background: "rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, color: "#64748b" }}>—</span>
+            <span style={{ fontSize: 14, color: "#cbd5e1", flex: 1 }}>No aircraft selected</span>
+            <span style={{ fontSize: 10, color: "#475569" }}>Per-unit rates</span>
+            {!selected && <Check size={14} style={{ color: "#22d3ee", flexShrink: 0 }} />}
+          </button>
+
+          {["wide_body", "narrow_body", "regional", "private_jet", "freighter"].map((cat) => {
+            const items = grouped[cat];
+            if (!items?.length) return null;
+            return (
+              <div key={cat}>
+                <div style={{ padding: "6px 12px", fontSize: 9, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "#475569", background: "rgba(255,255,255,0.02)" }}>
+                  {CATEGORY_LABELS[cat]}
+                </div>
+                {items.map((a) => {
+                  const isSelected = selected?.type_code === a.type_code;
+                  return (
+                    <button
+                      key={a.type_code}
+                      onMouseDown={(e) => { e.stopPropagation(); onSelect(a); }}
+                      onTouchEnd={(e) => { e.stopPropagation(); e.preventDefault(); onSelect(a); }}
+                      style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "8px 12px", textAlign: "left", background: isSelected ? "rgba(34,211,238,0.1)" : "transparent", border: "none", cursor: "pointer", color: "white" }}
+                    >
+                      <span style={{ fontFamily: "monospace", fontSize: 14, fontWeight: 700, color: "#22d3ee", width: 64, flexShrink: 0 }}>{a.type_code}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <span style={{ fontSize: 12, color: "#cbd5e1", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</span>
+                        <span style={{ fontSize: 10, color: "#475569" }}>{a.mtow_tonnes.toFixed(1)}t MTOW</span>
+                      </div>
+                      {isSelected && <Check size={14} style={{ color: "#22d3ee", flexShrink: 0 }} />}
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </>
+  );
+}
+
+export function AircraftPicker() {
+  const [open, setOpen] = useState(false);
+  const selected = useSelectedAircraft();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   return (
-    <div ref={ref} className="relative">
+    <div>
       <button
-        onClick={() => { setOpen(!open); setSearch(""); }}
+        onClick={() => setOpen(!open)}
         className={`w-9 h-9 rounded-lg flex items-center justify-center border transition-colors ${selected ? "bg-cyan-500/15 border-cyan-500/25" : "bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.08]"}`}
         title={selected ? `${selected.type_code} — ${selected.name}` : "Select aircraft"}
       >
         <Plane size={16} className={selected ? "text-cyan-400" : "text-slate-400"} />
       </button>
 
-      {open && createPortal(
-        <>
-        <div className="fixed inset-0 z-[9998] bg-black/50" onClick={() => setOpen(false)} />
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 pointer-events-none">
-        <div className="w-full max-w-sm max-h-[70vh] rounded-xl border border-white/[0.08] bg-[#0a0f1e] shadow-2xl overflow-hidden pointer-events-auto">
-          <div className="p-2 border-b border-white/[0.06]">
-            <div className="relative">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" />
-              <input
-                type="text"
-                placeholder="Search aircraft..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.06] text-sm text-white placeholder-slate-600 outline-none focus:border-cyan-500/30"
-                autoFocus
-              />
-            </div>
-          </div>
-
-          <div className="overflow-y-auto max-h-[calc(70vh-60px)]">
-            {/* None option */}
-            <button
-              onClick={() => { setSelectedAircraft(null); setOpen(false); }}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors ${!selected ? "bg-cyan-500/10" : "hover:bg-white/[0.04]"}`}
-            >
-              <span className="w-5 h-4 rounded-sm bg-white/[0.06] flex items-center justify-center text-[9px] text-slate-500">—</span>
-              <span className="text-sm text-slate-300 flex-1">No aircraft selected</span>
-              <span className="text-[10px] text-slate-600">Per-unit rates</span>
-              {!selected && <Check size={14} className="text-cyan-400 shrink-0" />}
-            </button>
-
-            {/* Grouped by category */}
-            {["wide_body", "narrow_body", "regional", "private_jet", "freighter"].map((cat) => {
-              const items = grouped[cat];
-              if (!items?.length) return null;
-              return (
-                <div key={cat}>
-                  <div className="px-3 py-1.5 text-[9px] font-semibold tracking-wider uppercase text-slate-600 bg-white/[0.02]">
-                    {CATEGORY_LABELS[cat]}
-                  </div>
-                  {items.map((a) => {
-                    const isSelected = selected?.type_code === a.type_code;
-                    return (
-                      <button
-                        key={a.type_code}
-                        onClick={() => { setSelectedAircraft(a); setOpen(false); }}
-                        className={`w-full flex items-center gap-3 px-3 py-2 text-left transition-colors ${isSelected ? "bg-cyan-500/10" : "hover:bg-white/[0.04]"}`}
-                      >
-                        <span className="font-mono text-sm font-bold text-cyan-400 w-16 shrink-0">{a.type_code}</span>
-                        <div className="flex-1 min-w-0">
-                          <span className="text-[12px] text-slate-300 truncate block">{a.name}</span>
-                          <span className="text-[10px] text-slate-600">{a.mtow_tonnes.toFixed(1)}t MTOW</span>
-                        </div>
-                        {isSelected && <Check size={14} className="text-cyan-400 shrink-0" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-        </div>
-        </>,
+      {open && mounted && createPortal(
+        <PickerModal
+          selected={selected}
+          onClose={() => setOpen(false)}
+          onSelect={(a) => { setSelectedAircraft(a); setOpen(false); }}
+        />,
         document.body
       )}
     </div>
