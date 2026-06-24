@@ -90,12 +90,28 @@ export function IntroSplash({ onComplete }: { onComplete: () => void }) {
               {Math.round(progress)}%
             </span>
           </div>
-          <div className="h-1 rounded-full bg-white/[0.08] overflow-hidden">
+          <div className="h-1.5 rounded-full bg-white/[0.08] overflow-hidden">
             <div
-              className="h-full rounded-full bg-cyan-500 transition-all duration-100"
+              className="h-full rounded-full relative overflow-hidden transition-all duration-100"
               style={{ width: `${progress}%` }}
-            />
+            >
+              <div className="absolute inset-0 bg-cyan-500" />
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)",
+                  backgroundSize: "200% 100%",
+                  animation: "shimmer 1.5s ease-in-out infinite",
+                }}
+              />
+            </div>
           </div>
+          <style>{`
+            @keyframes shimmer {
+              0% { background-position: -200% 0; }
+              100% { background-position: 200% 0; }
+            }
+          `}</style>
         </div>
       </div>
     </div>
