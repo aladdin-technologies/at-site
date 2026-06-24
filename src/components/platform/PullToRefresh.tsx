@@ -89,11 +89,11 @@ export function PullToRefresh({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
-      {/* Content with pull offset */}
+      {/* Content with pull offset — use margin not transform to avoid breaking fixed positioning */}
       <div
         style={{
-          transform: pullDistance > 0 ? `translateY(${pullDistance}px)` : undefined,
-          transition: pulling ? "none" : "transform 0.3s ease-out",
+          marginTop: pullDistance > 0 ? `${pullDistance}px` : undefined,
+          transition: pulling ? "none" : "margin-top 0.3s ease-out",
         }}
       >
         {children}
