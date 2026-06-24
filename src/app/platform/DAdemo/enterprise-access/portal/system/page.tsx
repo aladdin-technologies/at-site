@@ -268,14 +268,6 @@ export default function SystemPage() {
           <LiveGauge label="Network Out" value={networkOut} max={5} unit="Gbps" color="#3b82f6" icon={Wifi} />
         </div>
 
-        {/* Data stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <LiveStat label="Airports in DB" value="4,145" unit="" icon={Database} color="#22d3ee" />
-          <LiveStat label="Charge Records" value="378" unit="" icon={Database} color="#a78bfa" />
-          <LiveStat label="Revenue Lines" value="50" unit="" icon={Database} color="#f59e0b" />
-          <LiveStat label="Aircraft Types" value="22" unit="" icon={Database} color="#34d399" />
-        </div>
-
         {/* Live activity log */}
         <ActivityLog />
       </div>
