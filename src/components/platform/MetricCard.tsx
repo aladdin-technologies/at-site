@@ -45,10 +45,10 @@ export function MetricCard({
   const counter = useCountUp(value);
   const content = (
     <>
-      <p className="text-[11px] font-semibold tracking-wider uppercase text-slate-500 mb-2">
+      <p className="text-[10px] font-semibold tracking-wider uppercase text-slate-500 mb-2 truncate">
         {title}
       </p>
-      <p className="text-2xl font-bold text-white font-mono tabular-nums">
+      <p className="text-xl font-bold text-white font-mono tabular-nums truncate">
         {counter.value.toLocaleString()}
         {suffix}
       </p>
@@ -58,7 +58,7 @@ export function MetricCard({
     </>
   );
 
-  const className = `relative group rounded-2xl border border-white/[0.06] bg-white/[0.03] backdrop-blur-sm p-5 hover:border-cyan-500/20 hover:bg-white/[0.05] transition-all duration-300 ${href ? "cursor-pointer" : ""}`;
+  const className = `relative group rounded-2xl border border-white/[0.06] bg-white/[0.03] backdrop-blur-sm p-4 overflow-hidden hover:border-cyan-500/20 hover:bg-white/[0.05] transition-all duration-300 ${href ? "cursor-pointer" : ""}`;
 
   if (href) {
     return (
