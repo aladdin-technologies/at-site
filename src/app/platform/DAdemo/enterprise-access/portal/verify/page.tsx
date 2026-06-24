@@ -78,7 +78,7 @@ export default function AccessPage() {
     <div className="relative min-h-screen flex flex-col items-center justify-center px-4 overflow-hidden bg-[#060a14]">
       {/* Video background */}
       <video
-        src="/intro.mp4"
+        src="/intro-pin.mp4"
         autoPlay
         loop
         muted
