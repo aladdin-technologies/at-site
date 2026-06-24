@@ -76,35 +76,16 @@ export default function AccessPage() {
 
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center px-4 overflow-hidden bg-[#060a14]">
-      {/* Background effects */}
-      <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(34,211,238,0.06),transparent_50%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(99,102,241,0.05),transparent_40%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(34,211,238,0.03),transparent_40%)]" />
-        <div
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px)",
-            backgroundSize: "40px 40px",
-          }}
-        />
-      </div>
-
-      {/* Orbital ring animation */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] sm:w-[700px] sm:h-[700px]">
-        <div
-          className="absolute inset-0 rounded-full border border-cyan-500/[0.07]"
-          style={{ animation: "spin 60s linear infinite" }}
-        />
-        <div
-          className="absolute inset-8 rounded-full border border-indigo-500/[0.05]"
-          style={{ animation: "spin 45s linear infinite reverse" }}
-        />
-        <div
-          className="absolute inset-16 rounded-full border border-cyan-500/[0.04]"
-          style={{ animation: "spin 90s linear infinite" }}
-        />
-      </div>
+      {/* Video background */}
+      <video
+        src="/intro.mp4"
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover"
+      />
+      <div className="absolute inset-0 bg-black/70" />
 
       {/* Access card */}
       <div className="relative z-10 w-full max-w-md">
