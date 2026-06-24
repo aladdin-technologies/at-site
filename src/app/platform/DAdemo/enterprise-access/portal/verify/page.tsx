@@ -1,13 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { IntroSplash } from "@/components/platform/IntroSplash";
 
 export default function AccessPage() {
   const router = useRouter();
   const [code, setCode] = useState(["", "", "", ""]);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showSplash, setShowSplash] = useState(false);
+
+  const handleSplashComplete = useCallback(() => {
+    router.push("/platform/DAdemo/enterprise-access/portal/dashboard");
+  }, [router]);
 
   useEffect(() => {
     const header = document.querySelector("header");
@@ -53,7 +59,7 @@ export default function AccessPage() {
     await new Promise((r) => setTimeout(r, 1500));
     if (code.join("") === "2026") {
       sessionStorage.setItem("at-portal-auth", "1");
-      router.push("/platform/DAdemo/enterprise-access/portal/dashboard");
+      setShowSplash(true);
       return;
     }
     setLoading(false);
@@ -63,6 +69,10 @@ export default function AccessPage() {
   }
 
   const filled = code.every((d) => d !== "");
+
+  if (showSplash) {
+    return <IntroSplash onComplete={handleSplashComplete} />;
+  }
 
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center px-4 overflow-hidden bg-[#060a14]">
