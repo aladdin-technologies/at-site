@@ -41,11 +41,11 @@ function StatCard({ label, value, color }: { label: string; value: number; color
   return (
     <div
       ref={counter.ref}
-      className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4"
+      className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 overflow-hidden"
     >
-      <div className="flex items-center gap-2 mb-2">
-        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
-        <span className="text-[10px] font-semibold tracking-wider uppercase text-slate-500">
+      <div className="flex items-center gap-2 mb-2 min-w-0">
+        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+        <span className="text-[10px] font-semibold tracking-wider uppercase text-slate-500 truncate">
           {label}
         </span>
       </div>

@@ -308,7 +308,7 @@ export default function RateCardPage() {
                         <span className="font-mono font-bold text-lg text-cyan-400 group-hover:text-cyan-300 transition-colors">
                           {c.airports.iata_code || "—"}
                         </span>
-                        <span className="block text-[11px] text-slate-500 mt-0.5 leading-tight">
+                        <span className="block text-[11px] text-slate-500 mt-0.5 leading-tight truncate">
                           {c.airports.name}
                         </span>
                       </td>

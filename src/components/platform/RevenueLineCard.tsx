@@ -116,7 +116,7 @@ export function RevenueLineCard({ line }: { line: RevenueLineRow }) {
   return (
     <a
       href={`/platform/DAdemo/enterprise-access/portal/revenue/${line.slug}`}
-      className={`group rounded-2xl border p-5 transition-all duration-300 cursor-pointer block ${
+      className={`group rounded-2xl border p-5 transition-all duration-300 cursor-pointer block overflow-hidden ${
         isAero
           ? "border-white/[0.06] bg-white/[0.02] hover:border-cyan-500/20 hover:bg-white/[0.04]"
           : "border-white/[0.06] bg-white/[0.02] hover:border-violet-500/20 hover:bg-white/[0.04]"
@@ -131,7 +131,7 @@ export function RevenueLineCard({ line }: { line: RevenueLineRow }) {
         </div>
         <div className="min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <h3 className="text-sm font-semibold text-white">{line.name}</h3>
+            <h3 className="text-sm font-semibold text-white truncate">{line.name}</h3>
             {line.subcategory && (
               <span className="text-[9px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full bg-white/[0.05] text-slate-500">
                 {line.subcategory}

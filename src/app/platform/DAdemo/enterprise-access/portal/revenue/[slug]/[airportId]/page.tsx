@@ -218,7 +218,7 @@ function NoiseAircraftSimulation({ charge, aircraft }: { charge: ChargeDetail; a
                           <span className="font-mono font-bold" style={{ color: CATEGORY_COLORS[cat] }}>
                             {ac.type_code}
                           </span>
-                          <span className="text-slate-500 text-[11px] ml-2">{ac.name}</span>
+                          <span className="text-slate-500 text-[11px] ml-2 truncate">{ac.name}</span>
                           <div className="flex items-center gap-3 mt-1">
                             <span className="text-[11px] text-slate-600 font-mono">MTOW: {ac.mtow_tonnes.toFixed(1)}t</span>
                             <span className="text-[10px] text-slate-700">ICAO {CHAPTER_LABELS[ac.noise_chapter] || `Ch.${ac.noise_chapter}`}</span>
@@ -477,7 +477,7 @@ export default function ChargeDetailPage() {
         ) : (
           <div className="space-y-4 mb-10">
             {charges.map((c) => (
-              <div key={c.id} className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6">
+              <div key={c.id} className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 overflow-hidden">
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <h2 className="text-base font-bold text-white mb-1">{revLine.name}</h2>

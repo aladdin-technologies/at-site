@@ -30,7 +30,7 @@ export function IntelligenceCard({
   return (
     <Tag
       {...(href ? { href } : {})}
-      className={`relative group rounded-2xl border bg-gradient-to-br ${accents[variant]} backdrop-blur-sm p-6 transition-all duration-300 ${href ? "cursor-pointer" : "cursor-default"}`}
+      className={`relative group rounded-2xl border bg-gradient-to-br ${accents[variant]} backdrop-blur-sm p-6 transition-all duration-300 overflow-hidden ${href ? "cursor-pointer" : "cursor-default"}`}
     >
       <div className="flex items-start justify-between mb-4">
         <div
@@ -42,8 +42,8 @@ export function IntelligenceCard({
           {status}
         </span>
       </div>
-      <h3 className="text-lg font-bold text-white mb-2">{title}</h3>
-      <p className="text-sm text-slate-400 leading-relaxed">{description}</p>
+      <h3 className="text-lg font-bold text-white mb-2 truncate">{title}</h3>
+      <p className="text-sm text-slate-400 leading-relaxed line-clamp-2">{description}</p>
     </Tag>
   );
 }

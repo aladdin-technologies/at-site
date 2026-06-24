@@ -261,14 +261,14 @@ function InfoCard({
   mono?: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-4">
+    <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-4 overflow-hidden">
       <div className="flex items-center gap-1.5 mb-2">
-        {icon && <span className="text-slate-600">{icon}</span>}
-        <p className="text-[10px] font-semibold tracking-wider uppercase text-slate-600">
+        {icon && <span className="text-slate-600 shrink-0">{icon}</span>}
+        <p className="text-[10px] font-semibold tracking-wider uppercase text-slate-600 truncate">
           {label}
         </p>
       </div>
-      <p className={`text-base text-white font-medium ${mono ? "font-mono" : ""}`}>
+      <p className={`text-base text-white font-medium truncate ${mono ? "font-mono" : ""}`}>
         {value}
       </p>
     </div>
