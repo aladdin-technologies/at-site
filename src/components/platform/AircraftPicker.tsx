@@ -92,11 +92,10 @@ export function AircraftPicker() {
     <div ref={ref} className="relative">
       <button
         onClick={() => { setOpen(!open); setSearch(""); }}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] transition-colors"
+        className={`w-9 h-9 rounded-lg flex items-center justify-center border transition-colors ${selected ? "bg-cyan-500/15 border-cyan-500/25" : "bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.08]"}`}
+        title={selected ? `${selected.type_code} — ${selected.name}` : "Select aircraft"}
       >
-        <Plane size={14} className="text-slate-400" />
-        <span className="text-[11px] font-mono text-slate-300">{label}</span>
-        <ChevronDown size={12} className={`text-slate-500 transition-transform ${open ? "rotate-180" : ""}`} />
+        <Plane size={16} className={selected ? "text-cyan-400" : "text-slate-400"} />
       </button>
 
       {open && (
