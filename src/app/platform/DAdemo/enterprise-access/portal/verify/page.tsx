@@ -47,7 +47,7 @@ export default function AccessPage() {
     if (code.some((d) => !d)) return;
     setLoading(true);
     await new Promise((r) => setTimeout(r, 1500));
-    if (code.join("") === "2026") {
+    if (code.join("") === "XXXX") {
       sessionStorage.setItem("at-portal-auth", "1");
       setShowSplash(true);
       return;
