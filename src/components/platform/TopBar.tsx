@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { label: "Revenue Intelligence", href: "/platform/DAdemo/enterprise-access/portal/revenue" },
   { label: "Asset Intelligence", href: "#", coming: true },
   { label: "Economics Intelligence", href: "#", coming: true },
+  { label: "Revenue Forecast", href: "/platform/DAdemo/enterprise-access/portal/forecast" },
   { label: "Charges Database", href: "#", coming: true },
 ];
 
