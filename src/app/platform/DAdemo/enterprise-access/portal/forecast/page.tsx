@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { BarChart3, TrendingUp, Plane, DollarSign, Calendar, Building2, ArrowLeft, ChevronRight } from "lucide-react";
+import { BarChart3, TrendingUp, Plane, DollarSign, Calendar, Building2, ArrowLeft, ChevronRight, Users } from "lucide-react";
 
 function useCountUp(target: number, duration = 1400) {
   const [value, setValue] = useState(0);
@@ -227,6 +227,9 @@ export default function ForecastDashboard() {
             </a>
             <a href="/platform/DAdemo/enterprise-access/portal/forecast/scenarios" className="px-3 py-2 rounded-lg border border-gray-200 text-xs font-semibold text-gray-700 hover:bg-gray-100 transition-colors flex items-center gap-1.5">
               <TrendingUp size={14} /> Scenarios
+            </a>
+            <a href="/platform/DAdemo/enterprise-access/portal/forecast/team" className="px-3 py-2 rounded-lg border border-gray-200 text-xs font-semibold text-gray-700 hover:bg-gray-100 transition-colors flex items-center gap-1.5">
+              <Users size={14} /> Team
             </a>
           </div>
         </div>
