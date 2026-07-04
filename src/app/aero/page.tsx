@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState, useMemo, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { BarChart3, TrendingUp, Plane, DollarSign, Calendar, Building2, ArrowLeft, ChevronRight, Users } from "lucide-react";
+import { Plane, DollarSign, Building2 } from "lucide-react";
 
 function useCountUp(target: number, duration = 1400) {
   const [value, setValue] = useState(0);
@@ -68,23 +67,12 @@ interface YieldRow {
 }
 
 export default function ForecastDashboard() {
-  const router = useRouter();
-  const [authorized, setAuthorized] = useState(false);
   const [traffic, setTraffic] = useState<TrafficRow[]>([]);
   const [yields, setYields] = useState<YieldRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState(2025);
 
   useEffect(() => {
-    if (sessionStorage.getItem("at-portal-auth") !== "1") {
-      router.replace("/aero/login");
-      return;
-    }
-    setAuthorized(true);
-  }, [router]);
-
-  useEffect(() => {
-    if (!authorized) return;
     async function load() {
       const [tRes, yRes] = await Promise.all([
         supabase.from("forecast_traffic").select("*, forecast_airlines(code, name), forecast_airports(code, name)"),
@@ -95,7 +83,7 @@ export default function ForecastDashboard() {
       setLoading(false);
     }
     load();
-  }, [authorized]);
+  }, []);
 
   const years = useMemo(() => [...new Set(traffic.map((t) => t.year))].sort(), [traffic]);
 
@@ -173,28 +161,23 @@ export default function ForecastDashboard() {
     return Object.entries(byApt).map(([code, data]) => ({ code, ...data }));
   }, [yearTraffic, yields, selectedYear]);
 
-  if (!authorized) return null;
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex items-center justify-center h-64">
         <div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto flex items-center justify-between h-14 px-6">
-          <div className="flex items-center gap-3">
-            <img src="/icon-192.png" alt="" className="w-7 h-7 rounded-lg" />
-            <span className="text-sm font-bold tracking-wide text-gray-900">AIRPORTRONICS</span>
-            <span className="text-xs text-gray-400 border-l border-gray-200 pl-3 ml-1 hidden sm:block">Aeronautical Revenue Forecasting</span>
-          </div>
-          <div className="flex items-center gap-3">
-            {/* Year selector */}
+    <div className="p-6">
+      {/* Page header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">Revenue Forecast Dashboard</h1>
+          <p className="text-sm text-gray-500">Global Aviation Group — {selectedYear} Overview</p>
+        </div>
+        <div className="flex items-center gap-3">
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(Number(e.target.value))}
@@ -204,33 +187,6 @@ export default function ForecastDashboard() {
                 <option key={y} value={y}>{y}</option>
               ))}
             </select>
-            <button
-              onClick={() => router.back()}
-              className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
-            >
-              <ArrowLeft size={18} />
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Title + nav */}
-        <div className="flex items-start justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">Revenue Forecast Dashboard</h1>
-            <p className="text-sm text-gray-500">Global Aviation Group — {selectedYear} Overview</p>
-          </div>
-          <div className="flex gap-2">
-            <a href="/aero/revenue" className="px-3 py-2 rounded-lg border border-gray-200 text-xs font-semibold text-gray-700 hover:bg-gray-100 transition-colors flex items-center gap-1.5">
-              <BarChart3 size={14} /> Revenue Matrix
-            </a>
-            <a href="/aero/scenarios" className="px-3 py-2 rounded-lg border border-gray-200 text-xs font-semibold text-gray-700 hover:bg-gray-100 transition-colors flex items-center gap-1.5">
-              <TrendingUp size={14} /> Scenarios
-            </a>
-            <a href="/aero/team" className="px-3 py-2 rounded-lg border border-gray-200 text-xs font-semibold text-gray-700 hover:bg-gray-100 transition-colors flex items-center gap-1.5">
-              <Users size={14} /> Team
-            </a>
           </div>
         </div>
 
@@ -290,6 +246,5 @@ export default function ForecastDashboard() {
           </div>
         </div>
       </div>
-    </div>
   );
 }
