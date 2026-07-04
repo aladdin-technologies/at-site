@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { Target, TrendingUp, TrendingDown } from "lucide-react";
+import { useAeroCurrencyConverter } from "@/lib/useAeroCurrency";
 
 function useCountUp(target: number, duration = 1400) {
   const [value, setValue] = useState(0);
@@ -60,6 +61,7 @@ export default function BudgetPage() {
   const [loading, setLoading] = useState(true);
   const [budgetYear, setBudgetYear] = useState(2025);
   const [budgetUplift, setBudgetUplift] = useState(5);
+  const { convert, symbol } = useAeroCurrencyConverter();
 
   useEffect(() => {
     async function load() {
@@ -105,8 +107,8 @@ export default function BudgetPage() {
   const totalVariance = totalBudget > 0 ? ((totalActual - totalBudget) / totalBudget) * 100 : 0;
   const monthsWithData = actuals.filter(v => v > 0).length;
 
-  const actualCounter = useCountUp(Math.round(totalActual / 1000000));
-  const budgetCounter = useCountUp(Math.round(totalBudget / 1000000));
+  const actualCounter = useCountUp(Math.round(convert(totalActual, "USD") / 1000000));
+  const budgetCounter = useCountUp(Math.round(convert(totalBudget, "USD") / 1000000));
   const varianceCounter = useCountUp(Math.round(Math.abs(totalVariance) * 10));
   const achievementCounter = useCountUp(totalBudget > 0 ? Math.round((totalActual / totalBudget) * 100) : 0);
 
@@ -149,12 +151,12 @@ export default function BudgetPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div ref={actualCounter.ref} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Actual Revenue</p>
-          <p className="text-2xl font-bold text-gray-900 font-mono">${actualCounter.value.toLocaleString()}M</p>
+          <p className="text-2xl font-bold text-gray-900 font-mono">{symbol}{actualCounter.value.toLocaleString()}M</p>
           <p className="text-[10px] text-gray-400 mt-1">{monthsWithData} months reported</p>
         </div>
         <div ref={budgetCounter.ref} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Budget Target</p>
-          <p className="text-2xl font-bold text-gray-900 font-mono">${budgetCounter.value.toLocaleString()}M</p>
+          <p className="text-2xl font-bold text-gray-900 font-mono">{symbol}{budgetCounter.value.toLocaleString()}M</p>
           <p className="text-[10px] text-gray-400 mt-1">{baseYear} + {budgetUplift}% uplift</p>
         </div>
         <div ref={varianceCounter.ref} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
@@ -196,12 +198,12 @@ export default function BudgetPage() {
                   <div
                     className="flex-1 rounded-t-sm bg-gray-200 transition-all duration-500"
                     style={{ height: `${budgetPct}%`, minHeight: 2 }}
-                    title={`Budget: $${Math.round(budget / 1000000)}M`}
+                    title={`Budget: ${symbol}${Math.round(convert(budget, "USD") / 1000000)}M`}
                   />
                   <div
                     className={`flex-1 rounded-t-sm transition-all duration-700 ${actual >= budget ? "bg-emerald-500" : "bg-red-400"}`}
                     style={{ height: `${actualPct}%`, minHeight: 2, animation: `barGrow 0.8s ease-out ${i * 60}ms forwards` }}
-                    title={`Actual: $${Math.round(actual / 1000000)}M`}
+                    title={`Actual: ${symbol}${Math.round(convert(actual, "USD") / 1000000)}M`}
                   />
                 </div>
                 <span className="text-[10px] text-gray-500">{m}</span>
@@ -210,8 +212,8 @@ export default function BudgetPage() {
                 <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-20">
                   <div className="bg-gray-900 text-white rounded-lg px-3 py-2 text-[10px] whitespace-nowrap shadow-xl">
                     <p className="font-bold mb-1">{m} {budgetYear}</p>
-                    <p>Budget: ${Math.round(budget / 1000000)}M</p>
-                    <p>Actual: ${Math.round(actual / 1000000)}M</p>
+                    <p>Budget: {symbol}{Math.round(convert(budget, "USD") / 1000000)}M</p>
+                    <p>Actual: {symbol}{Math.round(convert(actual, "USD") / 1000000)}M</p>
                     <p className={variance >= 0 ? "text-emerald-400" : "text-red-400"}>
                       Variance: {variance >= 0 ? "+" : ""}{variance.toFixed(1)}%
                     </p>
@@ -269,8 +271,8 @@ export default function BudgetPage() {
                 return (
                   <tr key={m} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
                     <td className="px-4 py-3 font-medium text-gray-900">{m} {budgetYear}</td>
-                    <td className="px-4 py-3 text-right text-gray-500 font-mono">${Math.round(budget / 1000000).toLocaleString()}M</td>
-                    <td className="px-4 py-3 text-right text-gray-900 font-mono font-semibold">${Math.round(actual / 1000000).toLocaleString()}M</td>
+                    <td className="px-4 py-3 text-right text-gray-500 font-mono">{symbol}{Math.round(convert(budget, "USD") / 1000000).toLocaleString()}M</td>
+                    <td className="px-4 py-3 text-right text-gray-900 font-mono font-semibold">{symbol}{Math.round(convert(actual, "USD") / 1000000).toLocaleString()}M</td>
                     <td className={`px-4 py-3 text-right font-mono font-semibold ${isAbove ? "text-emerald-600" : "text-red-500"}`}>
                       {isAbove ? "+" : ""}{variance.toFixed(1)}%
                     </td>
@@ -290,8 +292,8 @@ export default function BudgetPage() {
               })}
               <tr className="bg-gray-50/80 font-semibold">
                 <td className="px-4 py-3 text-gray-900">Full Year</td>
-                <td className="px-4 py-3 text-right text-gray-900 font-mono">${Math.round(totalBudget / 1000000).toLocaleString()}M</td>
-                <td className="px-4 py-3 text-right text-gray-900 font-mono">${Math.round(totalActual / 1000000).toLocaleString()}M</td>
+                <td className="px-4 py-3 text-right text-gray-900 font-mono">{symbol}{Math.round(convert(totalBudget, "USD") / 1000000).toLocaleString()}M</td>
+                <td className="px-4 py-3 text-right text-gray-900 font-mono">{symbol}{Math.round(convert(totalActual, "USD") / 1000000).toLocaleString()}M</td>
                 <td className={`px-4 py-3 text-right font-mono ${totalVariance >= 0 ? "text-emerald-600" : "text-red-500"}`}>
                   {totalVariance >= 0 ? "+" : ""}{totalVariance.toFixed(1)}%
                 </td>

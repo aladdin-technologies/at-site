@@ -6,6 +6,7 @@ import {
   Plus, Trash2, X, ChevronDown, ChevronRight,
   Building2, Tag, Gauge, Plane, Save, Search,
 } from "lucide-react";
+import { useAeroCurrencyConverter } from "@/lib/useAeroCurrency";
 
 interface Driver {
   id: string;
@@ -48,6 +49,7 @@ type Tab = "rates" | "charges" | "drivers";
 const CURRENCIES = ["USD", "EUR", "GBP", "AED", "SGD", "INR", "JPY", "AUD", "CAD", "CHF", "SAR", "QAR", "BHD", "KWD", "OMR", "MYR", "THB", "CNY", "HKD", "KRW"];
 
 export default function ChargesBuilderPage() {
+  const { convert, symbol, baseCurrency } = useAeroCurrencyConverter();
   const [tab, setTab] = useState<Tab>("rates");
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [chargeTypes, setChargeTypes] = useState<ChargeType[]>([]);
@@ -305,8 +307,15 @@ export default function ChargesBuilderPage() {
                           <td className="px-4 py-3">
                             <span className="text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 font-medium">{dr?.name || "—"}</span>
                           </td>
-                          <td className="px-4 py-3 text-right font-mono font-semibold text-gray-900">
-                            {r.currency} {Number(r.yield_rate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          <td className="px-4 py-3 text-right">
+                            <p className="font-mono font-semibold text-gray-900">
+                              {r.currency} {Number(r.yield_rate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </p>
+                            {r.currency !== baseCurrency && (
+                              <p className="text-[10px] text-gray-400 font-mono">
+                                ≈ {symbol}{convert(Number(r.yield_rate), r.currency).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </p>
+                            )}
                           </td>
                           <td className="px-4 py-3">
                             <span className="text-[10px] font-mono text-gray-500 bg-gray-100 px-2 py-1 rounded">

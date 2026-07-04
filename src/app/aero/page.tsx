@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { Building2 } from "lucide-react";
+import { useAeroCurrencyConverter } from "@/lib/useAeroCurrency";
 
 function useCountUp(target: number, duration = 1400) {
   const [value, setValue] = useState(0);
@@ -71,6 +72,7 @@ export default function ForecastDashboard() {
   const [yields, setYields] = useState<YieldRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState(2025);
+  const { convert, symbol } = useAeroCurrencyConverter();
 
   useEffect(() => {
     async function load() {
@@ -194,7 +196,7 @@ export default function ForecastDashboard() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
           <KPI label="Total Passengers" value={totalPax} suffix="" color="#3b82f6" />
           <KPI label="Aircraft Movements" value={totalMovements} suffix="" color="#8b5cf6" />
-          <KPI label="Total Revenue" value={Math.round(totalRevenue / 1000000)} prefix="$" suffix="M" color="#10b981" />
+          <KPI label="Total Revenue" value={Math.round(convert(totalRevenue, "USD") / 1000000)} prefix={symbol} suffix="M" color="#10b981" />
           <KPI label="Revenue Lines" value={6} suffix="" color="#f59e0b" />
         </div>
 
@@ -227,7 +229,7 @@ export default function ForecastDashboard() {
 
               return (
                 <div key={m} className="flex-1 flex flex-col items-center gap-1 group relative">
-                  <span className="text-[9px] text-gray-400 font-mono">${Math.round(val / 1000000)}M</span>
+                  <span className="text-[9px] text-gray-400 font-mono">{symbol}{Math.round(convert(val, "USD") / 1000000)}M</span>
                   <div
                     className="w-full rounded-t-md bg-blue-500 hover:bg-blue-600 transition-all duration-700 ease-out cursor-pointer"
                     style={{ height: `${pct}%`, minHeight: 4, animationDelay: `${i * 80}ms`, animation: "barGrow 0.8s ease-out forwards" }}
@@ -237,7 +239,7 @@ export default function ForecastDashboard() {
                   {/* Hover tooltip */}
                   <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-20">
                     <div className="bg-gray-900 text-white rounded-lg px-3 py-2 text-[10px] whitespace-nowrap shadow-xl">
-                      <p className="font-bold mb-1">{m} {selectedYear}: ${Math.round(val / 1000000).toLocaleString()}M</p>
+                      <p className="font-bold mb-1">{m} {selectedYear}: {symbol}{Math.round(convert(val, "USD") / 1000000).toLocaleString()}M</p>
                       {prevMonth > 0 && (
                         <p className={momDelta >= 0 ? "text-emerald-400" : "text-red-400"}>
                           vs prev month: {momDelta >= 0 ? "+" : ""}{momDelta.toFixed(1)}%
@@ -281,7 +283,7 @@ export default function ForecastDashboard() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-gray-900 font-mono">${Math.round(apt.revenue / 1000000).toLocaleString()}M</p>
+                  <p className="font-bold text-gray-900 font-mono">{symbol}{Math.round(convert(apt.revenue, "USD") / 1000000).toLocaleString()}M</p>
                   <p className="text-xs text-gray-500">Total revenue</p>
                 </div>
               </div>

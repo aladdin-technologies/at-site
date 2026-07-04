@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
+import { useAeroCurrencyConverter } from "@/lib/useAeroCurrency";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -26,12 +27,6 @@ function getTrafficValue(t: TrafficRow, metric: string): number {
   return t.dep_pax_direct;
 }
 
-function fmt(n: number): string {
-  if (n >= 1000000) return `$${(n / 1000000).toFixed(1)}M`;
-  if (n >= 1000) return `$${(n / 1000).toFixed(0)}K`;
-  return `$${n.toFixed(0)}`;
-}
-
 export default function RevenueMatrixPage() {
   const [traffic, setTraffic] = useState<TrafficRow[]>([]);
   const [yields, setYields] = useState<YieldRow[]>([]);
@@ -39,6 +34,14 @@ export default function RevenueMatrixPage() {
   const [selectedYear, setSelectedYear] = useState(2025);
   const [selectedAirport, setSelectedAirport] = useState("ALL");
   const [selectedAirline, setSelectedAirline] = useState("ALL");
+  const { convert, symbol } = useAeroCurrencyConverter();
+
+  function fmt(n: number): string {
+    const v = convert(n, "USD");
+    if (v >= 1000000) return `${symbol}${(v / 1000000).toFixed(1)}M`;
+    if (v >= 1000) return `${symbol}${(v / 1000).toFixed(0)}K`;
+    return `${symbol}${v.toFixed(0)}`;
+  }
 
   useEffect(() => {
     async function load() {

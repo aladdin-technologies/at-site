@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { TrendingUp, TrendingDown } from "lucide-react";
+import { useAeroCurrencyConverter } from "@/lib/useAeroCurrency";
 
 function useCountUp(target: number, duration = 1400) {
   const [value, setValue] = useState(0);
@@ -58,6 +59,7 @@ export default function AnalyticsPage() {
   const [traffic, setTraffic] = useState<TrafficRow[]>([]);
   const [yields, setYields] = useState<YieldRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const { convert, symbol } = useAeroCurrencyConverter();
 
   useEffect(() => {
     async function load() {
@@ -215,7 +217,7 @@ export default function AnalyticsPage() {
                 <div key={line.name}>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-sm text-gray-700 font-medium">{line.name}</span>
-                    <span className="text-sm text-gray-500 font-mono">${Math.round(line.revenue / 1000000).toLocaleString()}M</span>
+                    <span className="text-sm text-gray-500 font-mono">{symbol}{Math.round(convert(line.revenue, "USD") / 1000000).toLocaleString()}M</span>
                   </div>
                   <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                     <div
@@ -238,7 +240,7 @@ export default function AnalyticsPage() {
               const pct = (q.revenue / maxQuarter) * 100;
               return (
                 <div key={q.label} className="flex-1 flex flex-col items-center gap-2">
-                  <span className="text-xs text-gray-500 font-mono">${Math.round(q.revenue / 1000000)}M</span>
+                  <span className="text-xs text-gray-500 font-mono">{symbol}{Math.round(convert(q.revenue, "USD") / 1000000)}M</span>
                   <div className="w-full flex-1 flex items-end">
                     <div
                       className="w-full rounded-t-lg transition-all duration-700 ease-out"
@@ -282,8 +284,8 @@ export default function AnalyticsPage() {
               {[
                 { name: "Total Passengers", prev: prevPax, cur: curPax, fmt: (v: number) => `${(v / 1000000).toFixed(1)}M` },
                 { name: "Aircraft Movements", prev: prevMov, cur: curMov, fmt: (v: number) => `${(v / 1000).toFixed(0)}K` },
-                { name: "Total Revenue", prev: prevRev, cur: curRev, fmt: (v: number) => `$${(v / 1000000).toFixed(0)}M` },
-                { name: "Revenue per Pax", prev: prevYieldPerPax, cur: yieldPerPax, fmt: (v: number) => `$${v.toFixed(2)}` },
+                { name: "Total Revenue", prev: prevRev, cur: curRev, fmt: (v: number) => `${symbol}${(convert(v, "USD") / 1000000).toFixed(0)}M` },
+                { name: "Revenue per Pax", prev: prevYieldPerPax, cur: yieldPerPax, fmt: (v: number) => `${symbol}${convert(v, "USD").toFixed(2)}` },
               ].map((row) => {
                 const delta = row.prev > 0 ? ((row.cur - row.prev) / row.prev) * 100 : 0;
                 const isPositive = delta >= 0;
