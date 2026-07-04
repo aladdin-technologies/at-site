@@ -77,7 +77,7 @@ export default function ForecastDashboard() {
 
   useEffect(() => {
     if (sessionStorage.getItem("at-portal-auth") !== "1") {
-      router.replace("/platform/DAdemo/enterprise-access/portal/verify");
+      router.replace("/aero/login");
       return;
     }
     setAuthorized(true);

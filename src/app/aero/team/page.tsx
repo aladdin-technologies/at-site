@@ -40,7 +40,7 @@ export default function TeamPage() {
 
   useEffect(() => {
     if (sessionStorage.getItem("at-portal-auth") !== "1") {
-      router.replace("/platform/DAdemo/enterprise-access/portal/verify"); return;
+      router.replace("/aero/login"); return;
     }
     setAuthorized(true);
   }, [router]);
