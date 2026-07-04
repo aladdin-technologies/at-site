@@ -218,14 +218,14 @@ export default function RevenueStructurePage() {
                           placeholder="Revenue line name"
                           autoFocus
                           onKeyDown={e => { if (e.key === "Enter") addRevenueLine(cat.id); if (e.key === "Escape") setShowAddLine(null); }}
-                          className="flex-1 px-3 py-1.5 rounded-lg border border-gray-200 text-sm outline-none focus:border-blue-500"
+                          className="flex-1 px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500"
                         />
                         <input
                           value={newLineDesc}
                           onChange={e => setNewLineDesc(e.target.value)}
                           placeholder="Description (optional)"
                           onKeyDown={e => { if (e.key === "Enter") addRevenueLine(cat.id); }}
-                          className="flex-1 px-3 py-1.5 rounded-lg border border-gray-200 text-sm outline-none focus:border-blue-500 hidden sm:block"
+                          className="flex-1 px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500 hidden sm:block"
                         />
                         <button onClick={() => addRevenueLine(cat.id)} disabled={!newLineName.trim()} className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 disabled:opacity-40">Add</button>
                         <button onClick={() => { setShowAddLine(null); setNewLineName(""); setNewLineDesc(""); }} className="px-3 py-1.5 rounded-lg border border-gray-200 text-xs text-gray-500 hover:bg-gray-100">Cancel</button>
@@ -279,7 +279,7 @@ export default function RevenueStructurePage() {
                 placeholder="e.g. Aeronautical, Commercial, Real Estate"
                 autoFocus
                 onKeyDown={e => { if (e.key === "Enter") addCategory(); }}
-                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-blue-500"
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500"
               />
               <p className="text-[10px] text-gray-400 mt-2">Categories group your revenue lines (e.g. Aeronautical, Non-Aeronautical, Commercial)</p>
             </div>

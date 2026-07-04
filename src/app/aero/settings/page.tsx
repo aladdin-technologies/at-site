@@ -195,15 +195,15 @@ export default function SettingsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Inflation Rate (%)</label>
-                <input type="number" step="0.1" value={inflation} onChange={(e) => setInflation(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20" />
+                <input type="number" step="0.1" value={inflation} onChange={(e) => setInflation(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Yield Growth Rate (%)</label>
-                <input type="number" step="0.1" value={yieldGrowth} onChange={(e) => setYieldGrowth(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20" />
+                <input type="number" step="0.1" value={yieldGrowth} onChange={(e) => setYieldGrowth(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Traffic Growth Rate (%)</label>
-                <input type="number" step="0.1" value={trafficGrowth} onChange={(e) => setTrafficGrowth(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20" />
+                <input type="number" step="0.1" value={trafficGrowth} onChange={(e) => setTrafficGrowth(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20" />
               </div>
             </div>
           </div>
@@ -214,7 +214,7 @@ export default function SettingsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Fiscal Year Starts</label>
-                <select value={fiscalStart} onChange={(e) => setFiscalStart(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-blue-500">
+                <select value={fiscalStart} onChange={(e) => setFiscalStart(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500">
                   {["January","February","March","April","May","June","July","August","September","October","November","December"].map((m) => (
                     <option key={m}>{m}</option>
                   ))}
@@ -244,10 +244,10 @@ export default function SettingsPage() {
                   placeholder="colleague@company.com"
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
-                  className="w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-200 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20"
+                  className="w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20"
                 />
               </div>
-              <select className="px-3 py-2.5 rounded-lg border border-gray-200 text-sm outline-none">
+              <select className="px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none">
                 <option>Analyst</option>
                 <option>Viewer</option>
                 <option>Admin</option>

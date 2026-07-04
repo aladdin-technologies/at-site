@@ -139,7 +139,7 @@ export default function ChargesPage() {
       {tab === "formulas" && (
         <div>
           <div className="flex items-center gap-3 mb-4 flex-wrap">
-            <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} className="px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none">
+            <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} className="px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none">
               <option value="ALL">All Categories</option>
               {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               <option value="none">Uncategorized</option>
@@ -236,11 +236,11 @@ export default function ChargesPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="col-span-2 sm:col-span-1">
                       <label className="block text-xs font-medium text-gray-600 mb-1">Charge Name *</label>
-                      <input value={newCharge.name} onChange={e => setNewCharge(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Domestic Landing" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-blue-500" autoFocus />
+                      <input value={newCharge.name} onChange={e => setNewCharge(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Domestic Landing" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500" autoFocus />
                     </div>
                     <div className="col-span-2 sm:col-span-1">
                       <label className="block text-xs font-medium text-gray-600 mb-1">Revenue Category</label>
-                      <select value={newCharge.category_id} onChange={e => setNewCharge(p => ({ ...p, category_id: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-blue-500">
+                      <select value={newCharge.category_id} onChange={e => setNewCharge(p => ({ ...p, category_id: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500">
                         <option value="">None</option>
                         {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                       </select>
@@ -248,22 +248,22 @@ export default function ChargesPage() {
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
-                    <input value={newCharge.description} onChange={e => setNewCharge(p => ({ ...p, description: e.target.value }))} placeholder="Optional description" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-blue-500" />
+                    <input value={newCharge.description} onChange={e => setNewCharge(p => ({ ...p, description: e.target.value }))} placeholder="Optional description" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500" />
                   </div>
                   <div className="grid grid-cols-3 gap-4">
                     <div>
                       <label className="block text-xs font-medium text-gray-600 mb-1">Unit Rate</label>
-                      <input type="number" step="0.01" value={newCharge.unit_rate} onChange={e => setNewCharge(p => ({ ...p, unit_rate: e.target.value }))} placeholder="0.00" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-blue-500 font-mono" />
+                      <input type="number" step="0.01" value={newCharge.unit_rate} onChange={e => setNewCharge(p => ({ ...p, unit_rate: e.target.value }))} placeholder="0.00" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500 font-mono" />
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-600 mb-1">Currency</label>
-                      <select value={newCharge.currency} onChange={e => setNewCharge(p => ({ ...p, currency: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-blue-500">
+                      <select value={newCharge.currency} onChange={e => setNewCharge(p => ({ ...p, currency: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500">
                         {CURRENCIES.map(c => <option key={c}>{c}</option>)}
                       </select>
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-600 mb-1">Method</label>
-                      <select value={newCharge.calculation_method} onChange={e => setNewCharge(p => ({ ...p, calculation_method: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-blue-500">
+                      <select value={newCharge.calculation_method} onChange={e => setNewCharge(p => ({ ...p, calculation_method: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500">
                         {CALC_METHODS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                       </select>
                     </div>
@@ -271,14 +271,14 @@ export default function ChargesPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-medium text-gray-600 mb-1">Driver</label>
-                      <select value={newCharge.driver_id} onChange={e => setNewCharge(p => ({ ...p, driver_id: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-blue-500">
+                      <select value={newCharge.driver_id} onChange={e => setNewCharge(p => ({ ...p, driver_id: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500">
                         <option value="">Select driver</option>
                         {drivers.map(d => <option key={d.id} value={d.id}>{d.name} ({d.unit})</option>)}
                       </select>
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-600 mb-1">Effective Date</label>
-                      <input type="date" value={newCharge.effective_date} onChange={e => setNewCharge(p => ({ ...p, effective_date: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-blue-500" />
+                      <input type="date" value={newCharge.effective_date} onChange={e => setNewCharge(p => ({ ...p, effective_date: e.target.value }))} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500" />
                     </div>
                   </div>
 
@@ -354,17 +354,17 @@ export default function ChargesPage() {
                 <div className="p-6 space-y-4">
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Driver Name *</label>
-                    <input value={newDriverName} onChange={e => setNewDriverName(e.target.value)} placeholder="e.g. Cargo Tonnes" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-blue-500" autoFocus />
+                    <input value={newDriverName} onChange={e => setNewDriverName(e.target.value)} placeholder="e.g. Cargo Tonnes" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500" autoFocus />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Unit</label>
-                    <select value={newDriverUnit} onChange={e => setNewDriverUnit(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-blue-500">
+                    <select value={newDriverUnit} onChange={e => setNewDriverUnit(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500">
                       <option value="pax">pax</option><option value="movements">movements</option><option value="tonnes">tonnes</option><option value="hours">hours</option><option value="units">units</option><option value="screenings">screenings</option><option value="sqm">sqm</option>
                     </select>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
-                    <input value={newDriverDesc} onChange={e => setNewDriverDesc(e.target.value)} placeholder="Optional" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-blue-500" />
+                    <input value={newDriverDesc} onChange={e => setNewDriverDesc(e.target.value)} placeholder="Optional" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500" />
                   </div>
                 </div>
                 <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-2">
