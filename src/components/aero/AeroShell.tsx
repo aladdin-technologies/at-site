@@ -74,7 +74,7 @@ export function AeroShell({ children }: { children: React.ReactNode }) {
           {!collapsed && (
             <div className="min-w-0">
               <p className="text-sm font-bold text-gray-900 truncate">AIRPORTRONICS</p>
-              <p className="text-[9px] text-gray-400 truncate">Aeronautical Revenue</p>
+              <p className="text-[9px] text-gray-400 truncate">Airport Intelligence</p>
             </div>
           )}
         </div>
@@ -122,9 +122,9 @@ export function AeroShell({ children }: { children: React.ReactNode }) {
           {/* Collapse toggle — desktop only */}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="hidden lg:flex items-center justify-center w-full mt-1 p-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+            className={`hidden lg:flex items-center w-full mt-1 p-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors ${collapsed ? "justify-center" : "gap-2 justify-center"}`}
           >
-            {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+            {collapsed ? <ChevronRight size={16} /> : <><ChevronLeft size={16} /><span className="text-[11px]">Collapse</span></>}
           </button>
         </div>
       </aside>
@@ -141,7 +141,7 @@ export function AeroShell({ children }: { children: React.ReactNode }) {
           </button>
           <div className="flex-1" />
           <span className="text-[11px] text-gray-400 font-medium">
-            Aeronautical Revenue Forecasting
+            Aeronautical Revenue
           </span>
         </header>
 
