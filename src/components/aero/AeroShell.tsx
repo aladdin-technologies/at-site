@@ -7,7 +7,7 @@ import {
   History,
   BarChart3,
   TrendingUp,
-  Users,
+  Target,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -17,10 +17,10 @@ import {
 
 const NAV_ITEMS = [
   { label: "Dashboard", href: "/aero", icon: LayoutDashboard },
-  { label: "Historicals", href: "/aero/historicals", icon: History },
   { label: "Analytics", href: "/aero/analytics", icon: BarChart3 },
+  { label: "Historicals", href: "/aero/historicals", icon: History },
+  { label: "Budget", href: "/aero/budget", icon: Target },
   { label: "Forecast", href: "/aero/scenarios", icon: TrendingUp },
-  { label: "Team", href: "/aero/team", icon: Users },
   { label: "Settings", href: "/aero/settings", icon: Settings },
 ];
 
@@ -122,7 +122,7 @@ export function AeroShell({ children }: { children: React.ReactNode }) {
           {/* Collapse toggle — desktop only */}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className={`hidden lg:flex items-center w-full mt-1 p-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors ${collapsed ? "justify-center" : "gap-2 justify-center"}`}
+            className={`hidden lg:flex items-center w-full mt-1 p-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors ${collapsed ? "justify-center" : "gap-2"}`}
           >
             {collapsed ? <ChevronRight size={16} /> : <><ChevronLeft size={16} /><span className="text-[11px]">Collapse</span></>}
           </button>

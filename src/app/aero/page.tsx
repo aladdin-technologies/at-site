@@ -110,7 +110,7 @@ export default function ForecastDashboard() {
           if (metric === "dep_pax_direct") trafficVal = t.dep_pax_direct;
           else if (metric === "total_movements") trafficVal = t.total_movements;
           else if (metric === "total_mtow_tonnes") trafficVal = t.total_mtow_tonnes;
-          rev += trafficVal * y.yield_rate;
+          rev += trafficVal * Number(y.yield_rate);
         }
       }
     }
@@ -129,7 +129,7 @@ export default function ForecastDashboard() {
           if (metric === "dep_pax_direct") trafficVal = t.dep_pax_direct;
           else if (metric === "total_movements") trafficVal = t.total_movements;
           else if (metric === "total_mtow_tonnes") trafficVal = t.total_mtow_tonnes;
-          monthly[t.month] += trafficVal * y.yield_rate;
+          monthly[t.month] += trafficVal * Number(Number(y.yield_rate));
         }
       }
     }
@@ -154,7 +154,7 @@ export default function ForecastDashboard() {
           if (metric === "dep_pax_direct") tv = t.dep_pax_direct;
           else if (metric === "total_movements") tv = t.total_movements;
           else if (metric === "total_mtow_tonnes") tv = t.total_mtow_tonnes;
-          byApt[aptCode].revenue += tv * y.yield_rate;
+          byApt[aptCode].revenue += tv * Number(y.yield_rate);
         }
       }
     }
@@ -201,7 +201,7 @@ export default function ForecastDashboard() {
         {/* Monthly revenue chart */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8 shadow-sm">
           <h2 className="text-sm font-semibold text-gray-900 mb-4">Monthly Revenue — {selectedYear}</h2>
-          <div className="flex items-end gap-1 h-48">
+          <div className="flex items-end gap-2 h-64">
             {MONTHS.map((m, i) => {
               const val = monthlyRevenue[i + 1] || 0;
               const pct = (val / maxMonthly) * 100;
