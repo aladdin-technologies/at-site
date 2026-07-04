@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -8,11 +8,18 @@ import {
   BarChart3,
   TrendingUp,
   Target,
+  Receipt,
   Settings,
   ChevronLeft,
   ChevronRight,
   LogOut,
   Menu,
+  Bell,
+  HelpCircle,
+  User,
+  CreditCard,
+  Shield,
+  ChevronDown,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -21,6 +28,7 @@ const NAV_ITEMS = [
   { label: "Historicals", href: "/aero/historicals", icon: History },
   { label: "Budget", href: "/aero/budget", icon: Target },
   { label: "Forecast", href: "/aero/scenarios", icon: TrendingUp },
+  { label: "Charges", href: "/aero/revenue", icon: Receipt },
   { label: "Settings", href: "/aero/settings", icon: Settings },
 ];
 
@@ -30,6 +38,10 @@ export function AeroShell({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [authorized, setAuthorized] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const [userName, setUserName] = useState("Demo User");
+  const [userEmail, setUserEmail] = useState("demo@airportronics.com");
 
   useEffect(() => {
     if (sessionStorage.getItem("at-portal-auth") !== "1") {
@@ -37,7 +49,22 @@ export function AeroShell({ children }: { children: React.ReactNode }) {
       return;
     }
     setAuthorized(true);
+    try {
+      const stored = JSON.parse(sessionStorage.getItem("forecast-user") || "{}");
+      if (stored.name) setUserName(stored.name);
+      if (stored.email) setUserEmail(stored.email);
+    } catch {}
   }, [router]);
+
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
 
   function handleLogout() {
     sessionStorage.removeItem("at-portal-auth");
@@ -140,9 +167,106 @@ export function AeroShell({ children }: { children: React.ReactNode }) {
             <Menu size={20} className="text-gray-600" />
           </button>
           <div className="flex-1" />
-          <span className="text-[11px] text-gray-400 font-medium">
-            Aeronautical Revenue
-          </span>
+
+          {/* Notifications */}
+          <button className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors">
+            <Bell size={18} className="text-gray-500" />
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-blue-500 rounded-full" />
+          </button>
+
+          {/* Help */}
+          <button className="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+            <HelpCircle size={18} className="text-gray-500" />
+          </button>
+
+          {/* Divider */}
+          <div className="w-px h-6 bg-gray-200" />
+
+          {/* User avatar + dropdown */}
+          <div ref={userMenuRef} className="relative">
+            <button
+              onClick={() => setUserMenuOpen(!userMenuOpen)}
+              className="flex items-center gap-2.5 pl-1 pr-2 py-1 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                {userName.split(" ").map(n => n[0]).join("").slice(0, 2)}
+              </div>
+              <div className="hidden sm:block text-left">
+                <p className="text-xs font-semibold text-gray-900 leading-tight">{userName}</p>
+                <p className="text-[10px] text-gray-400 leading-tight">Admin</p>
+              </div>
+              <ChevronDown size={14} className={`text-gray-400 transition-transform duration-200 ${userMenuOpen ? "rotate-180" : ""}`} />
+            </button>
+
+            {/* Dropdown */}
+            {userMenuOpen && (
+              <div className="absolute right-0 top-full mt-1.5 w-64 bg-white rounded-xl border border-gray-200 shadow-lg shadow-black/8 py-1 z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+                {/* User info header */}
+                <div className="px-4 py-3 border-b border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-sm font-bold shrink-0">
+                      {userName.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate">{userName}</p>
+                      <p className="text-xs text-gray-500 truncate">{userEmail}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Menu items */}
+                <div className="py-1">
+                  <button
+                    onClick={() => { setUserMenuOpen(false); router.push("/aero/settings"); }}
+                    className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    <User size={16} className="text-gray-400" />
+                    Profile & Account
+                  </button>
+                  <button
+                    onClick={() => { setUserMenuOpen(false); router.push("/aero/settings"); }}
+                    className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    <Settings size={16} className="text-gray-400" />
+                    Settings
+                  </button>
+                  <button
+                    onClick={() => { setUserMenuOpen(false); router.push("/aero/settings?tab=team"); }}
+                    className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    <Shield size={16} className="text-gray-400" />
+                    Team & Permissions
+                  </button>
+                  <button className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                    <CreditCard size={16} className="text-gray-400" />
+                    Billing & Plan
+                  </button>
+                </div>
+
+                {/* Workspace info */}
+                <div className="border-t border-gray-100 px-4 py-2.5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">Workspace</p>
+                      <p className="text-xs text-gray-600 font-medium">Global Aviation Group</p>
+                    </div>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-medium">Pro</span>
+                  </div>
+                </div>
+
+                {/* Logout */}
+                <div className="border-t border-gray-100 py-1">
+                  <button
+                    onClick={() => { setUserMenuOpen(false); handleLogout(); }}
+                    className="flex items-center gap-3 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    <LogOut size={16} />
+                    Log out
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </header>
 
         {/* Page content — scrollable */}

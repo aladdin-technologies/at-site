@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { ArrowLeft, UserPlus, Mail, Shield, Eye, Crown, Trash2 } from "lucide-react";
+import { UserPlus, Mail, Shield, Eye, Crown } from "lucide-react";
 
 interface TeamMember {
   id: string;
@@ -28,8 +27,6 @@ const ROLE_CONFIG: Record<string, { label: string; icon: React.ElementType; colo
 };
 
 export default function TeamPage() {
-  const router = useRouter();
-  const [authorized, setAuthorized] = useState(false);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [invites, setInvites] = useState<Invite[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,16 +36,8 @@ export default function TeamPage() {
   const [inviteSent, setInviteSent] = useState(false);
 
   useEffect(() => {
-    if (sessionStorage.getItem("at-portal-auth") !== "1") {
-      router.replace("/aero/login"); return;
-    }
-    setAuthorized(true);
-  }, [router]);
-
-  useEffect(() => {
-    if (!authorized) return;
     loadTeam();
-  }, [authorized]);
+  }, []);
 
   async function loadTeam() {
     const user = JSON.parse(sessionStorage.getItem("forecast-user") || "{}");
@@ -85,24 +74,21 @@ export default function TeamPage() {
     }, 1500);
   }
 
-  if (!authorized) return null;
-  if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" /></div>;
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" /></div>;
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-3xl mx-auto flex items-center justify-between h-14 px-6">
-          <div className="flex items-center gap-3">
-            <button onClick={() => router.back()} className="text-gray-400 hover:text-gray-900"><ArrowLeft size={18} /></button>
-            <span className="text-sm font-bold text-gray-900">Team Management</span>
-          </div>
-          <button onClick={() => setShowInvite(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors">
-            <UserPlus size={14} /> Invite Member
-          </button>
+    <div className="p-6 max-w-3xl">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">Team Management</h1>
+          <p className="text-sm text-gray-500">Manage your team members and invitations</p>
         </div>
-      </header>
+        <button onClick={() => setShowInvite(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors">
+          <UserPlus size={14} /> Invite Member
+        </button>
+      </div>
 
-      <div className="max-w-3xl mx-auto px-6 py-8">
+      <div>
         {/* Invite form */}
         {showInvite && (
           <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6 shadow-sm">

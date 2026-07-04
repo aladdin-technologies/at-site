@@ -1,9 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { ArrowLeft, Download } from "lucide-react";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -35,8 +33,6 @@ function fmt(n: number): string {
 }
 
 export default function RevenueMatrixPage() {
-  const router = useRouter();
-  const [authorized, setAuthorized] = useState(false);
   const [traffic, setTraffic] = useState<TrafficRow[]>([]);
   const [yields, setYields] = useState<YieldRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,14 +41,6 @@ export default function RevenueMatrixPage() {
   const [selectedAirline, setSelectedAirline] = useState("ALL");
 
   useEffect(() => {
-    if (sessionStorage.getItem("at-portal-auth") !== "1") {
-      router.replace("/aero/login"); return;
-    }
-    setAuthorized(true);
-  }, [router]);
-
-  useEffect(() => {
-    if (!authorized) return;
     async function load() {
       const [tRes, yRes] = await Promise.all([
         supabase.from("forecast_traffic").select("*, forecast_airlines(code, name), forecast_airports(code, name)"),
@@ -63,7 +51,7 @@ export default function RevenueMatrixPage() {
       setLoading(false);
     }
     load();
-  }, [authorized]);
+  }, []);
 
   const years = useMemo(() => [...new Set(traffic.map(t => t.year))].sort(), [traffic]);
   const airports = useMemo(() => {
@@ -109,34 +97,31 @@ export default function RevenueMatrixPage() {
   const grandTotal = matrix.reduce((s, r) => s + r.total, 0);
   const monthTotals = Array.from({ length: 12 }, (_, i) => matrix.reduce((s, r) => s + r.monthly[i], 0));
 
-  if (!authorized) return null;
-  if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" /></div>;
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" /></div>;
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-[1600px] mx-auto flex items-center justify-between h-14 px-6">
-          <div className="flex items-center gap-3">
-            <button onClick={() => router.back()} className="text-gray-400 hover:text-gray-900"><ArrowLeft size={18} /></button>
-            <span className="text-sm font-bold text-gray-900">Revenue Matrix</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <select value={selectedAirport} onChange={e => setSelectedAirport(e.target.value)} className="px-2 py-1 rounded-lg text-xs border border-gray-200 bg-white">
-              <option value="ALL">All Airports</option>
-              {airports.map(([c, n]) => <option key={c} value={c}>{c} — {n}</option>)}
-            </select>
-            <select value={selectedAirline} onChange={e => setSelectedAirline(e.target.value)} className="px-2 py-1 rounded-lg text-xs border border-gray-200 bg-white">
-              <option value="ALL">All Airlines</option>
-              {airlines.map(([c, n]) => <option key={c} value={c}>{c} — {n}</option>)}
-            </select>
-            <select value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))} className="px-2 py-1 rounded-lg text-xs border border-gray-200 bg-white">
-              {years.map(y => <option key={y} value={y}>{y}</option>)}
-            </select>
-          </div>
+    <div className="p-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">Revenue Matrix</h1>
+          <p className="text-sm text-gray-500">Charge line revenue by month</p>
         </div>
-      </header>
+        <div className="flex items-center gap-3">
+          <select value={selectedAirport} onChange={e => setSelectedAirport(e.target.value)} className="px-2 py-1.5 rounded-lg text-xs border border-gray-200 bg-white outline-none">
+            <option value="ALL">All Airports</option>
+            {airports.map(([c, n]) => <option key={c} value={c}>{c} — {n}</option>)}
+          </select>
+          <select value={selectedAirline} onChange={e => setSelectedAirline(e.target.value)} className="px-2 py-1.5 rounded-lg text-xs border border-gray-200 bg-white outline-none">
+            <option value="ALL">All Airlines</option>
+            {airlines.map(([c, n]) => <option key={c} value={c}>{c} — {n}</option>)}
+          </select>
+          <select value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))} className="px-2 py-1.5 rounded-lg text-xs border border-gray-200 bg-white outline-none">
+            {years.map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+        </div>
+      </div>
 
-      <div className="max-w-[1600px] mx-auto px-6 py-6">
+      <div>
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">

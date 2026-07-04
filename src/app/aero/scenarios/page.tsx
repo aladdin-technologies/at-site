@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { ArrowLeft, Plus, BarChart3, Clock, Check, Archive } from "lucide-react";
+import { Plus, BarChart3, Clock, Check, Archive } from "lucide-react";
 
 interface Scenario {
   id: string;
@@ -30,8 +29,6 @@ const STATUS_ICONS: Record<string, React.ElementType> = {
 };
 
 export default function ScenariosPage() {
-  const router = useRouter();
-  const [authorized, setAuthorized] = useState(false);
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
@@ -41,16 +38,8 @@ export default function ScenariosPage() {
   const [newYieldEsc, setNewYieldEsc] = useState("3.0");
 
   useEffect(() => {
-    if (sessionStorage.getItem("at-portal-auth") !== "1") {
-      router.replace("/aero/login"); return;
-    }
-    setAuthorized(true);
-  }, [router]);
-
-  useEffect(() => {
-    if (!authorized) return;
     loadScenarios();
-  }, [authorized]);
+  }, []);
 
   async function loadScenarios() {
     const { data } = await supabase.from("forecast_scenarios").select("*").order("created_at", { ascending: false });
@@ -81,24 +70,21 @@ export default function ScenariosPage() {
     loadScenarios();
   }
 
-  if (!authorized) return null;
-  if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" /></div>;
+  if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" /></div>;
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-4xl mx-auto flex items-center justify-between h-14 px-6">
-          <div className="flex items-center gap-3">
-            <button onClick={() => router.back()} className="text-gray-400 hover:text-gray-900"><ArrowLeft size={18} /></button>
-            <span className="text-sm font-bold text-gray-900">Forecast Scenarios</span>
-          </div>
-          <button onClick={() => setShowCreate(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors">
-            <Plus size={14} /> New Scenario
-          </button>
+    <div className="p-6">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">Forecast Scenarios</h1>
+          <p className="text-sm text-gray-500">Create and manage revenue forecast scenarios</p>
         </div>
-      </header>
+        <button onClick={() => setShowCreate(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors">
+          <Plus size={14} /> New Scenario
+        </button>
+      </div>
 
-      <div className="max-w-4xl mx-auto px-6 py-8">
+      <div>
         {/* Create form */}
         {showCreate && (
           <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6 shadow-sm">
@@ -170,3 +156,4 @@ export default function ScenariosPage() {
     </div>
   );
 }
+

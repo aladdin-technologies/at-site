@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useRef } from "react";
 import { supabase } from "@/lib/supabase";
-import { Plane, DollarSign, Building2 } from "lucide-react";
+import { Building2 } from "lucide-react";
 
 function useCountUp(target: number, duration = 1400) {
   const [value, setValue] = useState(0);
@@ -104,7 +104,7 @@ export default function ForecastDashboard() {
     const yearYields = yields.filter((y) => y.year === selectedYear);
     for (const t of yearTraffic) {
       for (const y of yearYields) {
-        if ((t.forecast_airports as any)?.code === (y.forecast_airports as any)?.code) {
+        if ((t.forecast_airports as any)?.code === (y.forecast_airports as any)?.code && t.month === y.month) {
           const metric = (y.forecast_revenue_lines as any)?.traffic_metric;
           let trafficVal = 0;
           if (metric === "dep_pax_direct") trafficVal = t.dep_pax_direct;
@@ -129,7 +129,7 @@ export default function ForecastDashboard() {
           if (metric === "dep_pax_direct") trafficVal = t.dep_pax_direct;
           else if (metric === "total_movements") trafficVal = t.total_movements;
           else if (metric === "total_mtow_tonnes") trafficVal = t.total_mtow_tonnes;
-          monthly[t.month] += trafficVal * Number(Number(y.yield_rate));
+          monthly[t.month] += trafficVal * Number(y.yield_rate);
         }
       }
     }
