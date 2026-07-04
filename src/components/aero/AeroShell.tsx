@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { useAeroCurrency } from "@/lib/useAeroCurrency";
 import {
   LayoutDashboard,
   History,
@@ -44,6 +45,7 @@ export function AeroShell({ children }: { children: React.ReactNode }) {
   const userMenuRef = useRef<HTMLDivElement>(null);
   const [userName, setUserName] = useState("Demo User");
   const [userEmail, setUserEmail] = useState("demo@airportronics.com");
+  const aeroCurrency = useAeroCurrency();
 
   useEffect(() => {
     if (sessionStorage.getItem("at-portal-auth") !== "1") {
@@ -169,6 +171,15 @@ export function AeroShell({ children }: { children: React.ReactNode }) {
             <Menu size={20} className="text-gray-600" />
           </button>
           <div className="flex-1" />
+
+          {/* Currency badge */}
+          <a
+            href="/aero/settings"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-50 border border-gray-200 hover:bg-gray-100 transition-colors"
+            title="Base currency — change in Settings"
+          >
+            <span className="text-[11px] font-mono font-semibold text-gray-700">{aeroCurrency}</span>
+          </a>
 
           {/* Notifications */}
           <button className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors">
