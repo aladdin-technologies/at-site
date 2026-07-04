@@ -65,7 +65,7 @@ export function AeroShell({ children }: { children: React.ReactNode }) {
       {/* Sidebar */}
       <aside
         className={`fixed lg:relative z-50 h-full bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ${
-          collapsed ? "w-16" : "w-56"
+          collapsed ? "w-14" : "w-48"
         } ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
       >
         {/* Logo */}

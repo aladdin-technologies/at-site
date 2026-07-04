@@ -198,25 +198,68 @@ export default function ForecastDashboard() {
           <KPI label="Revenue Lines" value={6} suffix="" color="#f59e0b" />
         </div>
 
-        {/* Monthly revenue chart */}
+        {/* Monthly revenue chart — animated bars with hover intelligence */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8 shadow-sm">
           <h2 className="text-sm font-semibold text-gray-900 mb-4">Monthly Revenue — {selectedYear}</h2>
           <div className="flex items-end gap-2 h-64">
             {MONTHS.map((m, i) => {
-              const val = monthlyRevenue[i + 1] || 0;
+              const monthNum = i + 1;
+              const val = monthlyRevenue[monthNum] || 0;
               const pct = (val / maxMonthly) * 100;
+              const prevMonth = monthlyRevenue[monthNum - 1] || 0;
+              const momDelta = prevMonth > 0 ? ((val - prevMonth) / prevMonth * 100) : 0;
+              const prevYearTraffic = traffic.filter((t) => t.year === selectedYear - 1);
+              let prevYearRev = 0;
+              const prevYearYields = yields.filter((y) => y.year === selectedYear - 1);
+              for (const t of prevYearTraffic.filter((t) => t.month === monthNum)) {
+                for (const y of prevYearYields) {
+                  if ((t.forecast_airports as any)?.code === (y.forecast_airports as any)?.code && t.month === y.month) {
+                    const metric = (y.forecast_revenue_lines as any)?.traffic_metric;
+                    let tv = 0;
+                    if (metric === "dep_pax_direct") tv = t.dep_pax_direct;
+                    else if (metric === "total_movements") tv = t.total_movements;
+                    else if (metric === "total_mtow_tonnes") tv = t.total_mtow_tonnes;
+                    prevYearRev += tv * Number(y.yield_rate);
+                  }
+                }
+              }
+              const yoyDelta = prevYearRev > 0 ? ((val - prevYearRev) / prevYearRev * 100) : 0;
+
               return (
-                <div key={m} className="flex-1 flex flex-col items-center gap-1">
+                <div key={m} className="flex-1 flex flex-col items-center gap-1 group relative">
                   <span className="text-[9px] text-gray-400 font-mono">${Math.round(val / 1000000)}M</span>
                   <div
-                    className="w-full rounded-t-md bg-blue-500 transition-all duration-500"
-                    style={{ height: `${pct}%`, minHeight: 4 }}
+                    className="w-full rounded-t-md bg-blue-500 hover:bg-blue-600 transition-all duration-700 ease-out cursor-pointer"
+                    style={{ height: `${pct}%`, minHeight: 4, animationDelay: `${i * 80}ms`, animation: "barGrow 0.8s ease-out forwards" }}
                   />
                   <span className="text-[10px] text-gray-500">{m}</span>
+
+                  {/* Hover tooltip */}
+                  <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-20">
+                    <div className="bg-gray-900 text-white rounded-lg px-3 py-2 text-[10px] whitespace-nowrap shadow-xl">
+                      <p className="font-bold mb-1">{m} {selectedYear}: ${Math.round(val / 1000000).toLocaleString()}M</p>
+                      {prevMonth > 0 && (
+                        <p className={momDelta >= 0 ? "text-emerald-400" : "text-red-400"}>
+                          vs prev month: {momDelta >= 0 ? "+" : ""}{momDelta.toFixed(1)}%
+                        </p>
+                      )}
+                      {prevYearRev > 0 && (
+                        <p className={yoyDelta >= 0 ? "text-emerald-400" : "text-red-400"}>
+                          vs {selectedYear - 1}: {yoyDelta >= 0 ? "+" : ""}{yoyDelta.toFixed(1)}%
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
               );
             })}
           </div>
+          <style>{`
+            @keyframes barGrow {
+              from { transform: scaleY(0); transform-origin: bottom; }
+              to { transform: scaleY(1); transform-origin: bottom; }
+            }
+          `}</style>
         </div>
 
         {/* Airport breakdown */}
