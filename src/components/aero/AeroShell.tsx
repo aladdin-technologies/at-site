@@ -29,7 +29,7 @@ const NAV_ITEMS = [
   { label: "Analytics", href: "/aero/analytics", icon: BarChart3 },
   { label: "Historicals", href: "/aero/historicals", icon: History },
   { label: "Budget", href: "/aero/budget", icon: Target },
-  { label: "Forecast", href: "/aero/scenarios", icon: TrendingUp },
+  { label: "Scenarios", href: "/aero/scenarios", icon: TrendingUp },
   { label: "Charges", href: "/aero/charges", icon: Receipt },
   { label: "Revenue", href: "/aero/revenue", icon: DollarSign },
   { label: "Settings", href: "/aero/settings", icon: Settings },

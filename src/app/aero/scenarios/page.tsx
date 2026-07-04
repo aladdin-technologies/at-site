@@ -76,8 +76,8 @@ export default function ScenariosPage() {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Forecast Scenarios</h1>
-          <p className="text-sm text-gray-500">Create and manage revenue forecast scenarios</p>
+          <h1 className="text-xl font-bold text-gray-900">Scenarios</h1>
+          <p className="text-sm text-gray-500">Build possible futures — each scenario is a complete set of assumptions</p>
         </div>
         <button onClick={() => setShowCreate(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors">
           <Plus size={14} /> New Scenario

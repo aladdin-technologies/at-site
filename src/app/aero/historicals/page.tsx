@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
-import { Calendar } from "lucide-react";
+import { Calendar, Download, Upload } from "lucide-react";
 
 interface TrafficRow {
   year: number;
@@ -97,10 +97,10 @@ export default function HistoricalsPage() {
 
   return (
     <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Historical Data</h1>
-          <p className="text-sm text-gray-500">Monthly traffic data across all airports</p>
+          <p className="text-sm text-gray-500">Upload and manage historical traffic and revenue data</p>
         </div>
         <div className="flex items-center gap-3">
           <select
@@ -122,6 +122,51 @@ export default function HistoricalsPage() {
             ))}
           </select>
         </div>
+      </div>
+
+      {/* Template actions */}
+      <div className="flex items-center gap-2 mb-6 flex-wrap">
+        <button
+          onClick={() => {
+            const header = ["Year","Month","Airport","Airline","Arriving Pax","Departing Pax","Transfer Pax","Transit Pax","Total Movements","MTOW (tonnes)"];
+            const rows = [header.join(",")];
+            for (const y of years) {
+              for (let m = 1; m <= 12; m++) {
+                for (const apt of airports) {
+                  rows.push([y, m, apt.code, "", "", "", "", "", "", ""].join(","));
+                }
+              }
+            }
+            const blob = new Blob([rows.join("\n")], { type: "text/csv" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url; a.download = "traffic_template.csv"; a.click();
+            URL.revokeObjectURL(url);
+          }}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+        >
+          <Download size={14} /> Download Driver Template
+        </button>
+        <button
+          onClick={() => {
+            const header = ["Year","Month","Airport","Revenue Line","Revenue Amount","Currency"];
+            const rows = [header.join(",")];
+            const blob = new Blob([rows.join("\n")], { type: "text/csv" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url; a.download = "revenue_template.csv"; a.click();
+            URL.revokeObjectURL(url);
+          }}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+        >
+          <Download size={14} /> Download Revenue Template
+        </button>
+        <button
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-200 bg-blue-50 text-xs font-medium text-blue-700 hover:bg-blue-100 transition-colors"
+        >
+          <Upload size={14} /> Upload Data
+        </button>
+        <span className="text-[10px] text-gray-400 ml-2">Templates are generated based on your configured revenue structure</span>
       </div>
 
       {/* Monthly trend */}
