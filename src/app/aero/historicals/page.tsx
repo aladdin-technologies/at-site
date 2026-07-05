@@ -77,13 +77,14 @@ export default function HistoricalsPage() {
 
   function generateDriverTemplate() {
     const monthCols = MONTHS.map((m) => `${m}-${String(templateYear).slice(2)}`);
-    const driverNames = cfgDrivers.map(d => d.name);
-    const header = ["Airport", "Airline", ...driverNames.map(n => `"${n}"`)];
+    const header = ["Airport", "Airline", "Driver", ...monthCols];
     const rows = [header.join(",")];
     for (const apt of cfgAirports) {
       const airlinesAtApt = cfgAirlines.filter(al => { const a = al.applicable_airports || []; return a.length === 0 || a.includes(apt.id); });
       for (const al of airlinesAtApt) {
-        rows.push([apt.code, al.code, ...driverNames.map(() => "")].join(","));
+        for (const dr of cfgDrivers) {
+          rows.push([apt.code, al.code, `"${dr.name}"`, ...monthCols.map(() => "")].join(","));
+        }
       }
     }
     return rows.join("\n");
@@ -205,7 +206,7 @@ export default function HistoricalsPage() {
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-40"
           >
             <Download size={14} /> Driver Template
-            <span className="text-[9px] text-gray-400 ml-1">({cfgAirports.length * cfgAirlines.length} rows × {cfgDrivers.length} drivers)</span>
+            <span className="text-[9px] text-gray-400 ml-1">({cfgAirports.length * cfgAirlines.length * cfgDrivers.length} rows)</span>
           </button>
           <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-blue-200 bg-blue-50 text-xs font-medium text-blue-700 hover:bg-blue-100 transition-colors">
             <Upload size={14} /> Upload Data
