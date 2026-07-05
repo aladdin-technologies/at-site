@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAeroCurrency } from "@/lib/useAeroCurrency";
+import { usePermissions, type TabPermissions } from "@/lib/usePermissions";
 import {
   LayoutDashboard,
   History,
@@ -24,15 +25,15 @@ import {
   ChevronDown,
 } from "lucide-react";
 
-const NAV_ITEMS = [
-  { label: "Dashboard", href: "/aero", icon: LayoutDashboard },
-  { label: "Analytics", href: "/aero/analytics", icon: BarChart3 },
-  { label: "Historicals", href: "/aero/historicals", icon: History },
-  { label: "Budget", href: "/aero/budget", icon: Target },
-  { label: "Scenarios", href: "/aero/scenarios", icon: TrendingUp },
-  { label: "Charges", href: "/aero/charges", icon: Receipt },
-  { label: "Revenue", href: "/aero/revenue", icon: DollarSign },
-  { label: "Settings", href: "/aero/settings", icon: Settings },
+const NAV_ITEMS: { label: string; href: string; icon: any; permKey: keyof TabPermissions }[] = [
+  { label: "Dashboard", href: "/aero", icon: LayoutDashboard, permKey: "dashboard" },
+  { label: "Analytics", href: "/aero/analytics", icon: BarChart3, permKey: "analytics" },
+  { label: "Historicals", href: "/aero/historicals", icon: History, permKey: "historicals" },
+  { label: "Budget", href: "/aero/budget", icon: Target, permKey: "budget" },
+  { label: "Scenarios", href: "/aero/scenarios", icon: TrendingUp, permKey: "scenarios" },
+  { label: "Charges", href: "/aero/charges", icon: Receipt, permKey: "charges" },
+  { label: "Revenue Lines", href: "/aero/revenue", icon: DollarSign, permKey: "revenue" },
+  { label: "Settings", href: "/aero/settings", icon: Settings, permKey: "settings" },
 ];
 
 export function AeroShell({ children }: { children: React.ReactNode }) {
@@ -46,6 +47,9 @@ export function AeroShell({ children }: { children: React.ReactNode }) {
   const [userName, setUserName] = useState("Demo User");
   const [userEmail, setUserEmail] = useState("demo@airportronics.com");
   const aeroCurrency = useAeroCurrency();
+  const { canView } = usePermissions();
+
+  const visibleNav = NAV_ITEMS.filter(item => canView(item.permKey));
 
   useEffect(() => {
     if (sessionStorage.getItem("at-portal-auth") !== "1") {
@@ -112,7 +116,7 @@ export function AeroShell({ children }: { children: React.ReactNode }) {
 
         {/* Nav */}
         <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
-          {NAV_ITEMS.map((item) => {
+          {visibleNav.map((item) => {
             const active = isActive(item.href);
             return (
               <a

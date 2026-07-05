@@ -176,7 +176,7 @@ export default function ChargesPage() {
                           <h3 className="font-semibold text-gray-900 text-sm">{ch.name}</h3>
                           {cat && (
                             <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                              cat.name.toLowerCase().includes("non") ? "bg-emerald-50 text-emerald-700" : "bg-blue-50 text-blue-700"
+                              "bg-blue-50 text-blue-700"
                             }`}>{cat.name}</span>
                           )}
                         </div>

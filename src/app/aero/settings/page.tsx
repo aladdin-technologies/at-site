@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import { Settings, Users, Save, Plus, Trash2, Mail, Search, Check, ChevronDown, Globe } from "lucide-react";
+import { Settings, Users, Save, Plus, Trash2, Mail, Search, Check, ChevronDown, Globe, Shield, Eye, Lock } from "lucide-react";
 import { useAeroCurrency, setAeroCurrency } from "@/lib/useAeroCurrency";
 import { useExchangeRates } from "@/lib/useCurrency";
+import { TAB_KEYS, TAB_LABELS, type AccessLevel, type TabPermissions } from "@/lib/usePermissions";
 
 const MAJORS = ["USD", "EUR", "GBP", "AED", "INR", "SAR", "AUD", "CAD", "SGD", "JPY", "CNY", "CHF", "HKD", "KRW", "THB", "MYR", "SEK", "NOK", "DKK", "NZD", "TRY", "ZAR", "BRL", "MXN", "QAR", "BHD", "KWD", "OMR", "IDR", "PHP", "TWD", "PLN", "CZK", "HUF"];
 
@@ -72,11 +73,37 @@ export default function SettingsPage() {
   }, [allCurrencies, currencySearch]);
 
   const [inviteEmail, setInviteEmail] = useState("");
-  const [teamMembers] = useState([
-    { name: "Demo User", email: "demo@airportronics.com", role: "Admin", joined: "Jun 2025" },
-    { name: "Sarah Chen", email: "sarah.chen@example.com", role: "Analyst", joined: "Jul 2025" },
-    { name: "James Wright", email: "j.wright@example.com", role: "Viewer", joined: "Aug 2025" },
+
+  interface TeamMember {
+    name: string; email: string; role: string; joined: string;
+    permissions: TabPermissions;
+  }
+
+  const allFull: TabPermissions = { dashboard: "full", analytics: "full", historicals: "full", budget: "full", scenarios: "full", charges: "full", revenue: "full", settings: "full" };
+  const analystDefault: TabPermissions = { dashboard: "full", analytics: "full", historicals: "full", budget: "view", scenarios: "full", charges: "view", revenue: "view", settings: "none" };
+  const viewerDefault: TabPermissions = { dashboard: "view", analytics: "view", historicals: "view", budget: "view", scenarios: "view", charges: "view", revenue: "view", settings: "none" };
+
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([
+    { name: "Demo User", email: "demo@airportronics.com", role: "Admin", joined: "Jun 2025", permissions: allFull },
+    { name: "Sarah Chen", email: "sarah.chen@example.com", role: "Analyst", joined: "Jul 2025", permissions: analystDefault },
+    { name: "James Wright", email: "j.wright@example.com", role: "Viewer", joined: "Aug 2025", permissions: viewerDefault },
   ]);
+  const [editingMember, setEditingMember] = useState<string | null>(null);
+
+  function updateMemberPerm(email: string, tab: keyof TabPermissions, level: AccessLevel) {
+    setTeamMembers(prev => prev.map(m => {
+      if (m.email !== email) return m;
+      const newPerms = { ...m.permissions, [tab]: level };
+      const hasAnyFull = TAB_KEYS.some(k => newPerms[k] === "full");
+      const allView = TAB_KEYS.every(k => newPerms[k] === "view" || newPerms[k] === "none");
+      return { ...m, permissions: newPerms, role: m.role === "Admin" ? "Admin" : hasAnyFull ? "Analyst" : allView ? "Viewer" : "Custom" };
+    }));
+  }
+
+  function setPreset(email: string, preset: "admin" | "analyst" | "viewer") {
+    const perms = preset === "admin" ? allFull : preset === "analyst" ? analystDefault : viewerDefault;
+    setTeamMembers(prev => prev.map(m => m.email === email ? { ...m, permissions: perms, role: preset === "admin" ? "Admin" : preset === "analyst" ? "Analyst" : "Viewer" } : m));
+  }
 
   function handleSave() {
     setSaved(true);
@@ -247,56 +274,129 @@ export default function SettingsPage() {
                   className="w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20"
                 />
               </div>
-              <select className="px-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none">
-                <option>Analyst</option>
-                <option>Viewer</option>
-                <option>Admin</option>
-              </select>
               <button className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors">
                 <Plus size={16} /> Invite
               </button>
             </div>
           </div>
 
-          {/* Team list */}
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 bg-gray-50/50">
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Member</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Role</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden sm:table-cell">Joined</th>
-                  <th className="w-10"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {teamMembers.map((m) => (
-                  <tr key={m.email} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
-                    <td className="px-4 py-3">
-                      <p className="font-medium text-gray-900">{m.name}</p>
-                      <p className="text-xs text-gray-500">{m.email}</p>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+          {/* Team members with granular permissions */}
+          <div className="space-y-4">
+            {teamMembers.map((m) => {
+              const isEditing = editingMember === m.email;
+              return (
+                <div key={m.email} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                  {/* Member header */}
+                  <div className="flex items-center justify-between px-5 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold">
+                        {m.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">{m.name}</p>
+                        <p className="text-xs text-gray-500">{m.email}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase ${
                         m.role === "Admin" ? "bg-blue-50 text-blue-700" :
                         m.role === "Analyst" ? "bg-emerald-50 text-emerald-700" :
-                        "bg-gray-100 text-gray-600"
-                      }`}>
-                        {m.role}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-500 hidden sm:table-cell">{m.joined}</td>
-                    <td className="px-4 py-3">
+                        m.role === "Viewer" ? "bg-gray-100 text-gray-600" :
+                        "bg-amber-50 text-amber-700"
+                      }`}>{m.role}</span>
                       {m.role !== "Admin" && (
-                        <button className="text-gray-400 hover:text-red-500 transition-colors">
-                          <Trash2 size={14} />
+                        <button
+                          onClick={() => setEditingMember(isEditing ? null : m.email)}
+                          className="text-xs text-blue-600 font-medium hover:underline"
+                        >
+                          {isEditing ? "Close" : "Edit Access"}
                         </button>
                       )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+                  </div>
+
+                  {/* Granular permissions grid */}
+                  {isEditing && (
+                    <div className="border-t border-gray-100 px-5 py-4 bg-gray-50/50">
+                      {/* Presets */}
+                      <div className="flex items-center gap-2 mb-4">
+                        <span className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mr-2">Presets:</span>
+                        {(["admin", "analyst", "viewer"] as const).map(preset => (
+                          <button
+                            key={preset}
+                            onClick={() => setPreset(m.email, preset)}
+                            className="text-[10px] px-2.5 py-1 rounded-full border border-gray-200 text-gray-600 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-colors capitalize"
+                          >
+                            {preset === "admin" ? "Full Access" : preset === "analyst" ? "Analyst" : "View Only"}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Permission grid */}
+                      <div className="space-y-1.5">
+                        {TAB_KEYS.map(tabKey => {
+                          const level = m.permissions[tabKey];
+                          return (
+                            <div key={tabKey} className="flex items-center gap-3 py-1">
+                              <span className="text-xs text-gray-700 font-medium w-28">{TAB_LABELS[tabKey]}</span>
+                              <div className="flex gap-1">
+                                {([
+                                  { val: "none" as AccessLevel, label: "No Access", icon: Lock, color: "text-red-600 bg-red-50 border-red-200" },
+                                  { val: "view" as AccessLevel, label: "View Only", icon: Eye, color: "text-amber-600 bg-amber-50 border-amber-200" },
+                                  { val: "full" as AccessLevel, label: "Full Access", icon: Shield, color: "text-emerald-600 bg-emerald-50 border-emerald-200" },
+                                ]).map(opt => {
+                                  const isActive = level === opt.val;
+                                  return (
+                                    <button
+                                      key={opt.val}
+                                      onClick={() => updateMemberPerm(m.email, tabKey, opt.val)}
+                                      className={`flex items-center gap-1 px-2 py-1 rounded text-[10px] font-medium border transition-colors ${
+                                        isActive ? opt.color : "text-gray-400 bg-white border-gray-100 hover:border-gray-300"
+                                      }`}
+                                    >
+                                      <opt.icon size={10} />
+                                      {opt.label}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <div className="mt-3 pt-3 border-t border-gray-200 flex items-center gap-2">
+                        <p className="text-[10px] text-gray-400 flex-1">
+                          <Lock size={10} className="inline mr-0.5" /> No Access = tab hidden &nbsp;
+                          <Eye size={10} className="inline mr-0.5" /> View Only = read-only, edits greyed out &nbsp;
+                          <Shield size={10} className="inline mr-0.5" /> Full Access = read + write
+                        </p>
+                        {m.role !== "Admin" && (
+                          <button onClick={() => setTeamMembers(prev => prev.filter(x => x.email !== m.email))} className="text-[10px] text-red-500 hover:underline">Remove</button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Compact permission summary when not editing */}
+                  {!isEditing && m.role !== "Admin" && (
+                    <div className="border-t border-gray-50 px-5 py-2 flex items-center gap-1 flex-wrap">
+                      {TAB_KEYS.map(tabKey => {
+                        const level = m.permissions[tabKey];
+                        if (level === "none") return null;
+                        return (
+                          <span key={tabKey} className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${
+                            level === "full" ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-600"
+                          }`}>
+                            {TAB_LABELS[tabKey]}{level === "view" ? " 👁" : ""}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

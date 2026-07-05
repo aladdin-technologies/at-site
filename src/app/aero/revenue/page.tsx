@@ -148,9 +148,9 @@ export default function RevenueStructurePage() {
                   className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
                 >
                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
-                    cat.name.toLowerCase().includes("non") ? "bg-emerald-50" : "bg-blue-50"
+                    "bg-blue-50"
                   }`}>
-                    <FolderTree size={18} className={cat.name.toLowerCase().includes("non") ? "text-emerald-500" : "text-blue-500"} />
+                    <FolderTree size={18} className={"text-blue-500"} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-gray-900">{cat.name}</p>
@@ -281,7 +281,7 @@ export default function RevenueStructurePage() {
                 onKeyDown={e => { if (e.key === "Enter") addCategory(); }}
                 className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500"
               />
-              <p className="text-[10px] text-gray-400 mt-2">Categories group your revenue lines (e.g. Aeronautical, Non-Aeronautical, Commercial)</p>
+              <p className="text-[10px] text-gray-400 mt-2">Categories group your revenue lines (e.g. Landing, Terminal, Cargo, Ground Handling)</p>
             </div>
             <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-2">
               <button onClick={() => setShowAddCategory(false)} className="px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
