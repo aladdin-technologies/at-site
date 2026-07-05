@@ -216,9 +216,9 @@ export default function RevenueLinesPage() {
         <span>·</span>
         <span>{airlines.length} airline{airlines.length !== 1 ? "s" : ""}</span>
         <span>·</span>
-        <span>{drivers.length} driver{drivers.length !== 1 ? "s" : ""}</span>
-        <span>·</span>
         <span>{chargeTypes.length} revenue line{chargeTypes.length !== 1 ? "s" : ""}</span>
+        <span>·</span>
+        <span>{drivers.length} driver{drivers.length !== 1 ? "s" : ""}</span>
       </div>
 
       {/* Tabs */}
