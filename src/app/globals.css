@@ -102,8 +102,13 @@ body {
 
 /* ─── Selection color ─── */
 ::selection {
-  background-color: rgba(56, 189, 248, 0.2);
-  color: var(--text-primary);
+  background-color: rgba(59, 130, 246, 0.3);
+  color: #0f172a;
+}
+
+input::selection, select::selection, textarea::selection {
+  background-color: rgba(59, 130, 246, 0.35);
+  color: #111827;
 }
 
 /* ─── Custom scrollbar (dark theme) ─── */
