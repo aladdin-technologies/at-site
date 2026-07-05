@@ -225,7 +225,7 @@ export default function RevenueLinesPage() {
       {/* ===== SUMMARY TAB ===== */}
       {tab === "summary" && (
         <div>
-          <p className="text-xs text-gray-400 mb-4">Visual overview — Airport → Airlines → Charges</p>
+          <p className="text-xs text-gray-400 mb-4">Visual overview — Airport → Airlines → Revenue Lines</p>
           {airports.length === 0 ? (
             <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
               <Network size={32} className="text-gray-300 mx-auto mb-3" />
@@ -235,26 +235,19 @@ export default function RevenueLinesPage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {airports.filter(apt => {
-                if (!searchQuery) return true;
-                const q = searchQuery.toLowerCase();
-                return apt.code.toLowerCase().includes(q) || apt.name.toLowerCase().includes(q);
-              }).map(apt => {
-                const aptRates = ratesByAirport[apt.id] || [];
+              {airports.map(apt => {
                 const isExpanded = expandedAirports.has(apt.id);
+                const linesAtAirport = chargeTypes.filter(ct => {
+                  const ctApts = ct.applicable_airports || [];
+                  return ctApts.length === 0 || ctApts.includes(apt.id);
+                });
                 const airlinesAtAirport = airlines.filter(al => {
                   const alApts = al.applicable_airports || [];
                   return alApts.length === 0 || alApts.includes(apt.id);
                 });
-                const airlineIds = [...new Set([
-                  ...aptRates.map(r => r.airline_id).filter(Boolean) as string[],
-                  ...airlinesAtAirport.map(a => a.id),
-                ])];
-                const globalRates = aptRates.filter(r => !r.airline_id);
 
                 return (
                   <div key={apt.id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                    {/* Airport row */}
                     <div onClick={() => toggleAirport(apt.id)} className="flex items-center gap-3 px-5 py-3.5 hover:bg-gray-50/50 transition-colors cursor-pointer">
                       <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
                         <Building2 size={16} className="text-blue-500" />
@@ -263,60 +256,42 @@ export default function RevenueLinesPage() {
                         <span className="font-bold text-gray-900 text-sm">{apt.code}</span>
                         <span className="text-sm text-gray-500 ml-2">{apt.name}</span>
                       </div>
-                      <span className="text-[10px] text-gray-400 font-mono mr-2">{aptRates.length} charge{aptRates.length !== 1 ? "s" : ""} · {airlinesAtAirport.length} airline{airlinesAtAirport.length !== 1 ? "s" : ""}</span>
+                      <span className="text-[10px] text-gray-400 font-mono mr-2">{linesAtAirport.length} revenue line{linesAtAirport.length !== 1 ? "s" : ""} · {airlinesAtAirport.length} airline{airlinesAtAirport.length !== 1 ? "s" : ""}</span>
                       {isExpanded ? <ChevronDown size={16} className="text-gray-400" /> : <ChevronRight size={16} className="text-gray-400" />}
                     </div>
 
                     {isExpanded && (
                       <div className="border-t border-gray-100 bg-gray-50/30">
-                        {/* Global charges (all airlines) */}
-                        {globalRates.length > 0 && (
-                          <div className="px-5 py-2 border-b border-gray-100">
-                            <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold mb-1.5">All Airlines</p>
+                        {/* Revenue lines at this airport */}
+                        {linesAtAirport.length > 0 && (
+                          <div className="px-5 py-3 border-b border-gray-100">
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold mb-2">Revenue Lines</p>
                             <div className="flex flex-wrap gap-1.5">
-                              {globalRates.map(r => (
-                                <span key={r.id} className="text-[10px] px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-medium">
-                                  {chargeMap[r.charge_type_id]?.name || "Charge"} · {r.currency} {Number(r.yield_rate).toLocaleString()}
+                              {linesAtAirport.map(ct => (
+                                <span key={ct.id} className="text-[10px] px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-medium">
+                                  {ct.name}
+                                  {ct.driver_id && driverMap[ct.driver_id] && (
+                                    <span className="text-blue-400 ml-1">· {driverMap[ct.driver_id].name}</span>
+                                  )}
                                 </span>
                               ))}
                             </div>
                           </div>
                         )}
 
-                        {/* Per-airline breakdown */}
-                        {airlineIds.map(alId => {
-                          const al = airlineMap[alId];
-                          const alRates = aptRates.filter(r => r.airline_id === alId);
-                          const alKey = `${apt.id}:${alId}`;
-                          const alExpanded = expandedAirlines.has(alKey);
+                        {/* Airlines at this airport */}
+                        {airlinesAtAirport.map(al => (
+                          <div key={al.id} className="flex items-center gap-3 px-5 py-2.5 border-b border-gray-50 last:border-0 hover:bg-white/50 transition-colors">
+                            <div className="w-6 flex justify-center"><div className="w-px h-4 bg-gray-200" /></div>
+                            <Plane size={13} className="text-indigo-400 shrink-0" />
+                            <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">{al.code}</span>
+                            <span className="text-xs text-gray-500 flex-1">{al.name}</span>
+                            <span className="text-[10px] text-gray-400 font-mono">{linesAtAirport.length} line{linesAtAirport.length !== 1 ? "s" : ""}</span>
+                          </div>
+                        ))}
 
-                          return (
-                            <div key={alId} className="border-b border-gray-50 last:border-0">
-                              <div onClick={() => toggleAirline(apt.id, alId)} className="flex items-center gap-3 px-5 py-2.5 hover:bg-white/50 transition-colors cursor-pointer">
-                                <div className="w-6 flex justify-center"><div className="w-px h-4 bg-gray-200" /></div>
-                                <Plane size={13} className="text-indigo-400 shrink-0" />
-                                <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">{al?.code || "?"}</span>
-                                <span className="text-xs text-gray-500 flex-1">{al?.name}</span>
-                                <span className="text-[10px] text-gray-400 font-mono">{alRates.length} charge{alRates.length !== 1 ? "s" : ""}</span>
-                                {alExpanded ? <ChevronDown size={12} className="text-gray-300" /> : <ChevronRight size={12} className="text-gray-300" />}
-                              </div>
-                              {alExpanded && (
-                                <div className="pl-14 pr-5 pb-2">
-                                  <div className="flex flex-wrap gap-1.5">
-                                    {alRates.map(r => (
-                                      <span key={r.id} className="text-[10px] px-2 py-0.5 rounded bg-gray-100 text-gray-700 font-medium">
-                                        {chargeMap[r.charge_type_id]?.name || "Charge"} · {r.currency} {Number(r.yield_rate).toLocaleString()}
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-
-                        {aptRates.length === 0 && (
-                          <p className="px-5 py-4 text-xs text-gray-400 text-center">No charges configured for this airport. Add charges in the Charges tab.</p>
+                        {linesAtAirport.length === 0 && airlinesAtAirport.length === 0 && (
+                          <p className="px-5 py-4 text-xs text-gray-400 text-center">No revenue lines or airlines configured for this airport yet.</p>
                         )}
                       </div>
                     )}
