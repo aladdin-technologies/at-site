@@ -45,6 +45,10 @@ export default function RevenueLinesPage() {
 
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Inline editing
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editFields, setEditFields] = useState<Record<string, string>>({});
+
   useEffect(() => { loadAll(); }, []);
 
   async function loadAll() {
@@ -87,6 +91,10 @@ export default function RevenueLinesPage() {
     setShowAddAirport(false); setNewAptCode(""); setNewAptName(""); setNewAptCountry(""); loadAll();
   }
   async function deleteAirport(id: string) { await supabase.from("forecast_airports").delete().eq("id", id); loadAll(); }
+  async function updateAirport(id: string) {
+    await supabase.from("forecast_airports").update({ code: editFields.code?.toUpperCase(), name: editFields.name, country: editFields.country || null }).eq("id", id);
+    setEditingId(null); loadAll();
+  }
 
   async function addAirline() {
     if (!newAlCode.trim() || !newAlName.trim()) return;
@@ -94,6 +102,10 @@ export default function RevenueLinesPage() {
     setShowAddAirline(false); setNewAlCode(""); setNewAlName(""); loadAll();
   }
   async function deleteAirline(id: string) { await supabase.from("forecast_airlines").delete().eq("id", id); loadAll(); }
+  async function updateAirline(id: string) {
+    await supabase.from("forecast_airlines").update({ code: editFields.code?.toUpperCase(), name: editFields.name }).eq("id", id);
+    setEditingId(null); loadAll();
+  }
 
   async function addRevenueLine() {
     if (!newLineName.trim()) return;
@@ -101,6 +113,15 @@ export default function RevenueLinesPage() {
     setShowAddLine(false); setNewLineName(""); setNewLineDesc(""); loadAll();
   }
   async function deleteRevenueLine(id: string) { await supabase.from("forecast_charge_types").delete().eq("id", id); loadAll(); }
+  async function updateRevenueLine(id: string) {
+    await supabase.from("forecast_charge_types").update({ name: editFields.name, description: editFields.desc || null }).eq("id", id);
+    setEditingId(null); loadAll();
+  }
+
+  function startEdit(id: string, fields: Record<string, string>) {
+    setEditingId(id);
+    setEditFields(fields);
+  }
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" /></div>;
 
@@ -256,13 +277,34 @@ export default function RevenueLinesPage() {
               <tbody>
                 {airports.map(apt => {
                   const chargeCount = (ratesByAirport[apt.id] || []).length;
+                  const isEd = editingId === apt.id;
                   return (
-                    <tr key={apt.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
-                      <td className="px-5 py-3"><span className="font-bold text-gray-900 font-mono">{apt.code}</span></td>
-                      <td className="px-4 py-3 text-gray-700">{apt.name}</td>
-                      <td className="px-4 py-3 text-gray-500 text-xs hidden sm:table-cell">{apt.country || "—"}</td>
+                    <tr key={apt.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors group">
+                      <td className="px-5 py-3">
+                        {isEd ? <input value={editFields.code || ""} onChange={e => setEditFields(p => ({ ...p, code: e.target.value }))} onKeyDown={e => e.key === "Enter" && updateAirport(apt.id)} className="w-16 px-2 py-1 rounded border border-blue-400 text-sm text-gray-900 font-mono uppercase outline-none" autoFocus /> : <span className="font-bold text-gray-900 font-mono">{apt.code}</span>}
+                      </td>
+                      <td className="px-4 py-3">
+                        {isEd ? <input value={editFields.name || ""} onChange={e => setEditFields(p => ({ ...p, name: e.target.value }))} onKeyDown={e => e.key === "Enter" && updateAirport(apt.id)} className="w-full px-2 py-1 rounded border border-blue-400 text-sm text-gray-900 outline-none" /> : <span className="text-gray-700">{apt.name}</span>}
+                      </td>
+                      <td className="px-4 py-3 hidden sm:table-cell">
+                        {isEd ? <input value={editFields.country || ""} onChange={e => setEditFields(p => ({ ...p, country: e.target.value }))} onKeyDown={e => e.key === "Enter" && updateAirport(apt.id)} className="w-full px-2 py-1 rounded border border-blue-400 text-sm text-gray-900 outline-none" /> : <span className="text-gray-500 text-xs">{apt.country || "—"}</span>}
+                      </td>
                       <td className="px-4 py-3 text-right font-mono text-gray-500 text-xs">{chargeCount}</td>
-                      <td className="px-4 py-3"><button onClick={() => deleteAirport(apt.id)} className="text-gray-300 hover:text-red-500 transition-colors"><Trash2 size={14} /></button></td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          {isEd ? (
+                            <>
+                              <button onClick={() => updateAirport(apt.id)} className="text-emerald-500 hover:text-emerald-700 text-[10px] font-medium">Save</button>
+                              <button onClick={() => setEditingId(null)} className="text-gray-400 hover:text-gray-600 text-[10px]">Cancel</button>
+                            </>
+                          ) : (
+                            <>
+                              <button onClick={() => startEdit(apt.id, { code: apt.code, name: apt.name, country: apt.country || "" })} className="text-gray-300 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-all text-[10px] font-medium">Edit</button>
+                              <button onClick={() => deleteAirport(apt.id)} className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"><Trash2 size={14} /></button>
+                            </>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
@@ -323,14 +365,31 @@ export default function RevenueLinesPage() {
               <tbody>
                 {airlines.map(al => {
                   const entryCount = rates.filter(r => r.airline_id === al.id).length;
+                  const isEd = editingId === al.id;
                   return (
-                    <tr key={al.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+                    <tr key={al.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors group">
                       <td className="px-5 py-3">
-                        <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded font-mono">{al.code}</span>
+                        {isEd ? <input value={editFields.code || ""} onChange={e => setEditFields(p => ({ ...p, code: e.target.value }))} onKeyDown={e => e.key === "Enter" && updateAirline(al.id)} className="w-16 px-2 py-1 rounded border border-blue-400 text-sm text-gray-900 font-mono uppercase outline-none" autoFocus /> : <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded font-mono">{al.code}</span>}
                       </td>
-                      <td className="px-4 py-3 text-gray-700">{al.name}</td>
+                      <td className="px-4 py-3">
+                        {isEd ? <input value={editFields.name || ""} onChange={e => setEditFields(p => ({ ...p, name: e.target.value }))} onKeyDown={e => e.key === "Enter" && updateAirline(al.id)} className="w-full px-2 py-1 rounded border border-blue-400 text-sm text-gray-900 outline-none" /> : <span className="text-gray-700">{al.name}</span>}
+                      </td>
                       <td className="px-4 py-3 text-right font-mono text-gray-500 text-xs">{entryCount}</td>
-                      <td className="px-4 py-3"><button onClick={() => deleteAirline(al.id)} className="text-gray-300 hover:text-red-500 transition-colors"><Trash2 size={14} /></button></td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          {isEd ? (
+                            <>
+                              <button onClick={() => updateAirline(al.id)} className="text-emerald-500 hover:text-emerald-700 text-[10px] font-medium">Save</button>
+                              <button onClick={() => setEditingId(null)} className="text-gray-400 hover:text-gray-600 text-[10px]">Cancel</button>
+                            </>
+                          ) : (
+                            <>
+                              <button onClick={() => startEdit(al.id, { code: al.code, name: al.name })} className="text-gray-300 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-all text-[10px] font-medium">Edit</button>
+                              <button onClick={() => deleteAirline(al.id)} className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"><Trash2 size={14} /></button>
+                            </>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
@@ -377,16 +436,38 @@ export default function RevenueLinesPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {chargeTypes.map(ct => {
               const rateCount = rates.filter(r => r.charge_type_id === ct.id).length;
+              const isEd = editingId === ct.id;
               return (
                 <div key={ct.id} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:border-blue-200 transition-colors group">
                   <div className="flex items-start justify-between mb-2">
                     <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
                       <Tag size={14} className="text-blue-500" />
                     </div>
-                    <button onClick={() => deleteRevenueLine(ct.id)} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-all"><Trash2 size={13} /></button>
+                    <div className="flex items-center gap-1">
+                      {isEd ? (
+                        <>
+                          <button onClick={() => updateRevenueLine(ct.id)} className="text-emerald-500 hover:text-emerald-700 text-[10px] font-medium">Save</button>
+                          <button onClick={() => setEditingId(null)} className="text-gray-400 hover:text-gray-600 text-[10px]">Cancel</button>
+                        </>
+                      ) : (
+                        <>
+                          <button onClick={() => startEdit(ct.id, { name: ct.name, desc: ct.description || "" })} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-blue-500 transition-all text-[10px] font-medium">Edit</button>
+                          <button onClick={() => deleteRevenueLine(ct.id)} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-all"><Trash2 size={13} /></button>
+                        </>
+                      )}
+                    </div>
                   </div>
-                  <h3 className="font-semibold text-gray-900 text-sm">{ct.name}</h3>
-                  {ct.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{ct.description}</p>}
+                  {isEd ? (
+                    <div className="space-y-2">
+                      <input value={editFields.name || ""} onChange={e => setEditFields(p => ({ ...p, name: e.target.value }))} onKeyDown={e => e.key === "Enter" && updateRevenueLine(ct.id)} className="w-full px-2 py-1 rounded border border-blue-400 text-sm text-gray-900 font-semibold outline-none" autoFocus />
+                      <input value={editFields.desc || ""} onChange={e => setEditFields(p => ({ ...p, desc: e.target.value }))} onKeyDown={e => e.key === "Enter" && updateRevenueLine(ct.id)} placeholder="Description" className="w-full px-2 py-1 rounded border border-gray-200 text-xs text-gray-900 outline-none" />
+                    </div>
+                  ) : (
+                    <>
+                      <h3 className="font-semibold text-gray-900 text-sm">{ct.name}</h3>
+                      {ct.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{ct.description}</p>}
+                    </>
+                  )}
                   <p className="text-[10px] text-gray-400 font-mono mt-2">{rateCount} charge entr{rateCount !== 1 ? "ies" : "y"}</p>
                 </div>
               );
