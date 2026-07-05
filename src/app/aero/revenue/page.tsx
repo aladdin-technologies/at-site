@@ -136,7 +136,7 @@ export default function RevenueLinesPage() {
   }
   async function deleteRevenueLine(id: string) { await supabase.from("forecast_charge_types").delete().eq("id", id); loadAll(); }
   async function updateRevenueLine(id: string) {
-    await supabase.from("forecast_charge_types").update({ name: editFields.name, description: editFields.desc || null }).eq("id", id);
+    await supabase.from("forecast_charge_types").update({ name: editFields.name, description: editFields.desc || null, driver_id: editFields.driver_id || null }).eq("id", id);
     setEditingId(null); loadAll();
   }
 
@@ -572,7 +572,7 @@ export default function RevenueLinesPage() {
                         </>
                       ) : (
                         <>
-                          <button onClick={() => startEdit(ct.id, { name: ct.name, desc: ct.description || "" })} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-blue-500 transition-all text-[10px] font-medium">Edit</button>
+                          <button onClick={() => startEdit(ct.id, { name: ct.name, desc: ct.description || "", driver_id: ct.driver_id || "" })} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-blue-500 transition-all text-[10px] font-medium">Edit</button>
                           <button onClick={() => deleteRevenueLine(ct.id)} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-all"><Trash2 size={13} /></button>
                         </>
                       )}
@@ -581,6 +581,10 @@ export default function RevenueLinesPage() {
                   {isEd ? (
                     <div className="space-y-2">
                       <input value={editFields.name || ""} onChange={e => setEditFields(p => ({ ...p, name: e.target.value }))} onKeyDown={e => e.key === "Enter" && updateRevenueLine(ct.id)} className="w-full px-2 py-1 rounded border border-blue-400 text-sm text-gray-900 font-semibold outline-none" autoFocus />
+                      <select value={editFields.driver_id || ""} onChange={e => setEditFields(p => ({ ...p, driver_id: e.target.value }))} className="w-full px-2 py-1 rounded border border-gray-200 text-xs text-gray-900 outline-none">
+                        <option value="">No driver</option>
+                        {drivers.map(d => <option key={d.id} value={d.id}>{d.name} ({d.unit})</option>)}
+                      </select>
                       <input value={editFields.desc || ""} onChange={e => setEditFields(p => ({ ...p, desc: e.target.value }))} onKeyDown={e => e.key === "Enter" && updateRevenueLine(ct.id)} placeholder="Description" className="w-full px-2 py-1 rounded border border-gray-200 text-xs text-gray-900 outline-none" />
                     </div>
                   ) : (
