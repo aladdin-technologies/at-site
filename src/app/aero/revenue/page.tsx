@@ -225,7 +225,7 @@ export default function RevenueLinesPage() {
       {/* ===== SUMMARY TAB ===== */}
       {tab === "summary" && (
         <div>
-          <p className="text-xs text-gray-400 mb-4">Visual overview — Airport → Airlines → Revenue Lines</p>
+          <p className="text-xs text-gray-400 mb-4">Visual overview — Airport → Revenue Lines</p>
           {airports.length === 0 ? (
             <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
               <Network size={32} className="text-gray-300 mx-auto mb-3" />
@@ -256,42 +256,26 @@ export default function RevenueLinesPage() {
                         <span className="font-bold text-gray-900 text-sm">{apt.code}</span>
                         <span className="text-sm text-gray-500 ml-2">{apt.name}</span>
                       </div>
-                      <span className="text-[10px] text-gray-400 font-mono mr-2">{linesAtAirport.length} revenue line{linesAtAirport.length !== 1 ? "s" : ""} · {airlinesAtAirport.length} airline{airlinesAtAirport.length !== 1 ? "s" : ""}</span>
+                      <span className="text-[10px] text-gray-400 font-mono mr-2">{linesAtAirport.length} revenue line{linesAtAirport.length !== 1 ? "s" : ""}</span>
                       {isExpanded ? <ChevronDown size={16} className="text-gray-400" /> : <ChevronRight size={16} className="text-gray-400" />}
                     </div>
 
                     {isExpanded && (
-                      <div className="border-t border-gray-100 bg-gray-50/30">
-                        {/* Revenue lines at this airport */}
-                        {linesAtAirport.length > 0 && (
-                          <div className="px-5 py-3 border-b border-gray-100">
-                            <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold mb-2">Revenue Lines</p>
-                            <div className="flex flex-wrap gap-1.5">
-                              {linesAtAirport.map(ct => (
-                                <span key={ct.id} className="text-[10px] px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-medium">
-                                  {ct.name}
-                                  {ct.driver_id && driverMap[ct.driver_id] && (
-                                    <span className="text-blue-400 ml-1">· {driverMap[ct.driver_id].name}</span>
-                                  )}
-                                </span>
-                              ))}
+                      <div className="border-t border-gray-100">
+                        {linesAtAirport.length > 0 ? linesAtAirport.map((ct, idx) => {
+                          const dr = ct.driver_id ? driverMap[ct.driver_id] : null;
+                          return (
+                            <div key={ct.id} className={`flex items-center gap-3 px-5 py-2.5 hover:bg-blue-50/30 transition-colors ${idx > 0 ? "border-t border-gray-50" : ""}`}>
+                              <div className="w-6 flex justify-center"><div className="w-px h-4 bg-blue-200" /></div>
+                              <Tag size={13} className="text-blue-400 shrink-0" />
+                              <span className="text-sm font-medium text-gray-800">{ct.name}</span>
+                              {dr && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 font-medium">{dr.name}</span>
+                              )}
                             </div>
-                          </div>
-                        )}
-
-                        {/* Airlines at this airport */}
-                        {airlinesAtAirport.map(al => (
-                          <div key={al.id} className="flex items-center gap-3 px-5 py-2.5 border-b border-gray-50 last:border-0 hover:bg-white/50 transition-colors">
-                            <div className="w-6 flex justify-center"><div className="w-px h-4 bg-gray-200" /></div>
-                            <Plane size={13} className="text-indigo-400 shrink-0" />
-                            <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">{al.code}</span>
-                            <span className="text-xs text-gray-500 flex-1">{al.name}</span>
-                            <span className="text-[10px] text-gray-400 font-mono">{linesAtAirport.length} line{linesAtAirport.length !== 1 ? "s" : ""}</span>
-                          </div>
-                        ))}
-
-                        {linesAtAirport.length === 0 && airlinesAtAirport.length === 0 && (
-                          <p className="px-5 py-4 text-xs text-gray-400 text-center">No revenue lines or airlines configured for this airport yet.</p>
+                          );
+                        }) : (
+                          <p className="px-5 py-4 text-xs text-gray-400 text-center">No revenue lines configured for this airport yet.</p>
                         )}
                       </div>
                     )}
@@ -319,13 +303,13 @@ export default function RevenueLinesPage() {
                   <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Code</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Name</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden sm:table-cell">Country</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Charges</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Revenue Lines</th>
                   <th className="w-10"></th>
                 </tr>
               </thead>
               <tbody>
                 {airports.map(apt => {
-                  const chargeCount = (ratesByAirport[apt.id] || []).length;
+                  const linesAtApt = chargeTypes.filter(ct => { const a = ct.applicable_airports || []; return a.length === 0 || a.includes(apt.id); });
                   const isEd = editingId === apt.id;
                   return (
                     <tr key={apt.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors group">
@@ -338,7 +322,13 @@ export default function RevenueLinesPage() {
                       <td className="px-4 py-3 hidden sm:table-cell">
                         {isEd ? <input value={editFields.country || ""} onChange={e => setEditFields(p => ({ ...p, country: e.target.value }))} onKeyDown={e => e.key === "Enter" && updateAirport(apt.id)} className="w-full px-2 py-1 rounded border border-blue-400 text-sm text-gray-900 outline-none" /> : <span className="text-gray-500 text-xs">{apt.country || "—"}</span>}
                       </td>
-                      <td className="px-4 py-3 text-right font-mono text-gray-500 text-xs">{chargeCount}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap gap-1">
+                          {linesAtApt.map(ct => (
+                            <span key={ct.id} className="text-[9px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-medium">{ct.name}</span>
+                          ))}
+                        </div>
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
                           {isEd ? (
