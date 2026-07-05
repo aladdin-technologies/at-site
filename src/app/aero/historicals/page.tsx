@@ -2,61 +2,84 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
-import { Calendar, Download, Upload } from "lucide-react";
+import { Download, Upload, CheckCircle2, AlertCircle, MinusCircle } from "lucide-react";
 
-interface TrafficRow {
-  year: number; month: number;
-  arr_pax_direct: number; dep_pax_direct: number; transfer_pax: number; transit_pax: number;
-  total_movements: number; total_mtow_tonnes: number;
-  forecast_airlines: { code: string; name: string };
-  forecast_airports: { code: string; name: string };
-}
 interface CfgAirport { id: string; code: string; name: string; }
 interface CfgAirline { id: string; code: string; name: string; applicable_airports: string[] | null; }
 interface CfgLine { id: string; name: string; applicable_airports: string[] | null; driver_id: string | null; }
 interface CfgDriver { id: string; name: string; unit: string; }
 
+interface TrafficRow {
+  year: number; month: number;
+  forecast_airlines: { code: string } | null;
+  forecast_airports: { code: string } | null;
+}
+
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 export default function HistoricalsPage() {
-  const [traffic, setTraffic] = useState<TrafficRow[]>([]);
   const [cfgAirports, setCfgAirports] = useState<CfgAirport[]>([]);
   const [cfgAirlines, setCfgAirlines] = useState<CfgAirline[]>([]);
   const [cfgLines, setCfgLines] = useState<CfgLine[]>([]);
   const [cfgDrivers, setCfgDrivers] = useState<CfgDriver[]>([]);
+  const [trafficData, setTrafficData] = useState<TrafficRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedYear, setSelectedYear] = useState(2024);
-  const [metric, setMetric] = useState<"pax" | "movements" | "mtow">("pax");
+  const [viewMode, setViewMode] = useState<"revenue" | "traffic">("revenue");
 
   useEffect(() => {
     async function load() {
-      const [tRes, aRes, alRes, lRes, dRes] = await Promise.all([
-        supabase.from("forecast_traffic").select("*, forecast_airlines(code, name), forecast_airports(code, name)"),
+      const [aRes, alRes, lRes, dRes, tRes] = await Promise.all([
         supabase.from("forecast_airports").select("id, code, name").order("code"),
         supabase.from("forecast_airlines").select("id, code, name, applicable_airports").order("code"),
         supabase.from("forecast_charge_types").select("id, name, applicable_airports, driver_id").order("sort_order"),
         supabase.from("forecast_drivers").select("id, name, unit").order("name"),
+        supabase.from("forecast_traffic").select("year, month, forecast_airlines(code), forecast_airports(code)"),
       ]);
-      setTraffic((tRes.data ?? []) as unknown as TrafficRow[]);
       setCfgAirports((aRes.data ?? []) as CfgAirport[]);
       setCfgAirlines((alRes.data ?? []) as CfgAirline[]);
       setCfgLines((lRes.data ?? []) as CfgLine[]);
       setCfgDrivers((dRes.data ?? []) as CfgDriver[]);
+      setTrafficData((tRes.data ?? []) as unknown as TrafficRow[]);
       setLoading(false);
     }
     load();
   }, []);
 
-  const years = useMemo(() => [...new Set(traffic.map((t) => t.year))].sort(), [traffic]);
-  const airports = useMemo(() => {
-    const map = new Map<string, string>();
-    traffic.forEach(t => {
-      const code = (t.forecast_airports as any)?.code;
-      const name = (t.forecast_airports as any)?.name;
-      if (code) map.set(code, name);
-    });
-    return Array.from(map.entries()).map(([code, name]) => ({ code, name }));
-  }, [traffic]);
+  const dataYears = useMemo(() => {
+    const yrs = new Set(trafficData.map(t => t.year));
+    if (yrs.size === 0) return [2023, 2024, 2025];
+    const min = Math.min(...yrs);
+    const max = Math.max(...yrs);
+    const result: number[] = [];
+    for (let y = min; y <= max; y++) result.push(y);
+    return result;
+  }, [trafficData]);
+
+  const coverageMap = useMemo(() => {
+    const map: Record<string, Set<string>> = {};
+    for (const t of trafficData) {
+      const aptCode = (t.forecast_airports as any)?.code;
+      const alCode = (t.forecast_airlines as any)?.code;
+      if (!aptCode) continue;
+      const key = `${aptCode}:${alCode || "ALL"}`;
+      if (!map[key]) map[key] = new Set();
+      map[key].add(`${t.year}-${t.month}`);
+    }
+    return map;
+  }, [trafficData]);
+
+  function getCoverage(aptCode: string, alCode: string, year: number): "full" | "partial" | "none" {
+    const key = `${aptCode}:${alCode}`;
+    const data = coverageMap[key];
+    if (!data) return "none";
+    let count = 0;
+    for (let m = 1; m <= 12; m++) {
+      if (data.has(`${year}-${m}`)) count++;
+    }
+    if (count === 12) return "full";
+    if (count > 0) return "partial";
+    return "none";
+  }
 
   function generateRevenueTemplate() {
     const header = ["Airport", "Airline", "Revenue Line", "Year", ...MONTHS];
@@ -99,82 +122,19 @@ export default function HistoricalsPage() {
     URL.revokeObjectURL(url);
   }
 
-  const yearData = useMemo(() => traffic.filter(t => t.year === selectedYear), [traffic, selectedYear]);
-
-  const monthlyTotals = useMemo(() => {
-    return MONTHS.map((_, i) => {
-      const monthRows = yearData.filter(t => t.month === i + 1);
-      if (metric === "pax") {
-        return monthRows.reduce((s, t) => s + t.arr_pax_direct + t.dep_pax_direct + t.transfer_pax + t.transit_pax, 0);
-      } else if (metric === "movements") {
-        return monthRows.reduce((s, t) => s + t.total_movements, 0);
-      }
-      return monthRows.reduce((s, t) => s + t.total_mtow_tonnes, 0);
-    });
-  }, [yearData, metric]);
-
-  const maxMonthly = Math.max(...monthlyTotals, 1);
-
-  const airportMonthly = useMemo(() => {
-    return airports.map(apt => {
-      const aptData = yearData.filter(t => (t.forecast_airports as any)?.code === apt.code);
-      const months = MONTHS.map((_, i) => {
-        const rows = aptData.filter(t => t.month === i + 1);
-        if (metric === "pax") return rows.reduce((s, t) => s + t.arr_pax_direct + t.dep_pax_direct + t.transfer_pax + t.transit_pax, 0);
-        if (metric === "movements") return rows.reduce((s, t) => s + t.total_movements, 0);
-        return rows.reduce((s, t) => s + t.total_mtow_tonnes, 0);
-      });
-      return { ...apt, months, total: months.reduce((a, b) => a + b, 0) };
-    });
-  }, [airports, yearData, metric]);
-
-  const formatValue = (v: number) => {
-    if (metric === "pax") {
-      if (v >= 1000000) return `${(v / 1000000).toFixed(1)}M`;
-      if (v >= 1000) return `${(v / 1000).toFixed(0)}K`;
-      return v.toLocaleString();
-    }
-    if (metric === "movements") {
-      if (v >= 1000) return `${(v / 1000).toFixed(1)}K`;
-      return v.toLocaleString();
-    }
-    return `${(v / 1000).toFixed(0)}K t`;
-  };
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
-      </div>
-    );
+    return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" /></div>;
   }
+
+  const totalExpected = cfgAirports.length * cfgAirlines.length * dataYears.length * 12;
+  const totalUploaded = Object.values(coverageMap).reduce((s, set) => s + set.size, 0);
 
   return (
     <div className="p-6">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Historical Data</h1>
-          <p className="text-sm text-gray-500">Upload and manage historical traffic and revenue data</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <select
-            value={metric}
-            onChange={(e) => setMetric(e.target.value as any)}
-            className="px-3 py-1.5 rounded-lg text-sm border border-gray-200 bg-white text-gray-700 outline-none"
-          >
-            <option value="pax">Passengers</option>
-            <option value="movements">Movements</option>
-            <option value="mtow">MTOW</option>
-          </select>
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(Number(e.target.value))}
-            className="px-3 py-1.5 rounded-lg text-sm border border-gray-200 bg-white text-gray-700 outline-none"
-          >
-            {years.map((y) => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
+          <p className="text-sm text-gray-500">Manage uploaded data — download templates, upload, and track coverage</p>
         </div>
       </div>
 
@@ -210,77 +170,92 @@ export default function HistoricalsPage() {
         </div>
       </div>
 
-      {/* Monthly trend */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6 shadow-sm">
-        <h2 className="text-sm font-semibold text-gray-900 mb-4">
-          Monthly {metric === "pax" ? "Passengers" : metric === "movements" ? "Movements" : "MTOW"} — {selectedYear}
-        </h2>
-        <div className="flex items-end gap-2 h-48">
-          {MONTHS.map((m, i) => {
-            const val = monthlyTotals[i];
-            const pct = (val / maxMonthly) * 100;
-            return (
-              <div key={m} className="flex-1 flex flex-col items-center group relative h-full">
-                <div className="w-full flex-1 flex flex-col items-center justify-end overflow-hidden">
-                  <span className="text-[9px] text-gray-500 font-mono mb-1 shrink-0">{formatValue(val)}</span>
-                  <div
-                    className="w-full rounded-t-md bg-blue-500 hover:bg-blue-600 transition-colors duration-300 cursor-pointer animate-[growUp_0.8s_ease-out_forwards]"
-                    style={{ height: `${pct}%`, minHeight: 4, animationDelay: `${i * 60}ms`, opacity: 0 }}
-                  />
-                </div>
-                <span className="text-[10px] text-gray-500 shrink-0 mt-1">{m}</span>
-              </div>
-            );
-          })}
-        </div>
-        <style>{`
-          @keyframes growUp {
-            from { transform: scaleY(0); transform-origin: bottom; opacity: 0; }
-            to { transform: scaleY(1); transform-origin: bottom; opacity: 1; }
-          }
-        `}</style>
-      </div>
-
-      {/* Airport breakdown table */}
+      {/* Data Coverage */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
-          <Calendar size={16} className="text-gray-400" />
-          <h2 className="text-sm font-semibold text-gray-900">Airport × Month Breakdown — {selectedYear}</h2>
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-gray-900">Data Coverage</h2>
+            <p className="text-xs text-gray-500 mt-0.5">
+              {totalUploaded > 0
+                ? `${totalUploaded.toLocaleString()} data points uploaded across ${dataYears.length} year${dataYears.length !== 1 ? "s" : ""}`
+                : "No data uploaded yet — download a template and upload your historical data"
+              }
+            </p>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 text-[10px]">
+              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-emerald-500" /> Complete</span>
+              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-amber-400" /> Partial</span>
+              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-gray-100 border border-gray-200" /> Missing</span>
+            </div>
+          </div>
         </div>
+
+        {/* Heatmap by Airport × Airline × Year */}
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
               <tr className="bg-gray-50/80 border-b border-gray-100">
                 <th className="text-left px-4 py-2.5 font-semibold text-gray-500 uppercase sticky left-0 bg-gray-50/80 z-10">Airport</th>
-                {MONTHS.map(m => (
-                  <th key={m} className="text-right px-3 py-2.5 font-semibold text-gray-500 uppercase">{m}</th>
+                <th className="text-left px-3 py-2.5 font-semibold text-gray-500 uppercase">Airline</th>
+                {dataYears.map(y => (
+                  <th key={y} className="text-center px-3 py-2.5 font-semibold text-gray-500">{y}</th>
                 ))}
-                <th className="text-right px-4 py-2.5 font-semibold text-gray-700 uppercase bg-blue-50/50">Total</th>
               </tr>
             </thead>
             <tbody>
-              {airportMonthly.map(apt => (
-                <tr key={apt.code} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
-                  <td className="px-4 py-2.5 font-medium text-gray-900 sticky left-0 bg-white z-10">
-                    <p className="font-semibold">{apt.code}</p>
-                    <p className="text-[10px] text-gray-400">{apt.name}</p>
-                  </td>
-                  {apt.months.map((v, i) => (
-                    <td key={i} className="text-right px-3 py-2.5 text-gray-600 font-mono">{formatValue(v)}</td>
-                  ))}
-                  <td className="text-right px-4 py-2.5 font-bold text-gray-900 font-mono bg-blue-50/30">{formatValue(apt.total)}</td>
-                </tr>
-              ))}
-              <tr className="bg-gray-50/80 font-semibold">
-                <td className="px-4 py-2.5 text-gray-900 sticky left-0 bg-gray-50/80 z-10">Total</td>
-                {monthlyTotals.map((v, i) => (
-                  <td key={i} className="text-right px-3 py-2.5 text-gray-900 font-mono">{formatValue(v)}</td>
-                ))}
-                <td className="text-right px-4 py-2.5 text-gray-900 font-mono bg-blue-50/50">{formatValue(monthlyTotals.reduce((a, b) => a + b, 0))}</td>
-              </tr>
+              {cfgAirports.map(apt => {
+                const airlinesAtApt = cfgAirlines.filter(al => {
+                  const a = al.applicable_airports || [];
+                  return a.length === 0 || a.includes(apt.id);
+                });
+
+                return airlinesAtApt.map((al, alIdx) => (
+                  <tr key={`${apt.id}-${al.id}`} className={`border-b border-gray-50 hover:bg-gray-50/30 transition-colors ${alIdx === 0 ? "border-t border-gray-100" : ""}`}>
+                    <td className="px-4 py-2 sticky left-0 bg-white z-10">
+                      {alIdx === 0 && (
+                        <div>
+                          <span className="font-bold text-gray-900 font-mono">{apt.code}</span>
+                          <span className="text-gray-400 ml-1.5 hidden sm:inline">{apt.name}</span>
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-3 py-2">
+                      <span className="text-[10px] font-semibold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded font-mono">{al.code}</span>
+                    </td>
+                    {dataYears.map(year => {
+                      const status = getCoverage(apt.code, al.code, year);
+                      return (
+                        <td key={year} className="px-3 py-2 text-center">
+                          {status === "full" ? (
+                            <span className="inline-flex w-6 h-6 rounded bg-emerald-50 items-center justify-center" title="12/12 months">
+                              <CheckCircle2 size={14} className="text-emerald-500" />
+                            </span>
+                          ) : status === "partial" ? (
+                            <span className="inline-flex w-6 h-6 rounded bg-amber-50 items-center justify-center" title="Partial data">
+                              <AlertCircle size={14} className="text-amber-500" />
+                            </span>
+                          ) : (
+                            <span className="inline-flex w-6 h-6 rounded bg-gray-50 items-center justify-center" title="No data">
+                              <MinusCircle size={14} className="text-gray-300" />
+                            </span>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ));
+              })}
             </tbody>
           </table>
         </div>
+
+        {cfgAirports.length === 0 && (
+          <div className="p-8 text-center">
+            <p className="text-sm text-gray-500 mb-1">No airports configured</p>
+            <p className="text-xs text-gray-400">Set up your airports in Revenue Lines first, then upload historical data here</p>
+          </div>
+        )}
       </div>
     </div>
   );
