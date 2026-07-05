@@ -239,21 +239,15 @@ export default function AnalyticsPage() {
             {quarterlyRevenue.map((q, i) => {
               const pct = (q.revenue / maxQuarter) * 100;
               return (
-                <div key={q.label} className="flex-1 flex flex-col items-center gap-2">
-                  <span className="text-xs text-gray-500 font-mono">{symbol}{Math.round(convert(q.revenue, "USD") / 1000000)}M</span>
+                <div key={q.label} className="flex-1 flex flex-col items-center gap-2 h-full">
+                  <span className="text-xs text-gray-500 font-mono shrink-0">{symbol}{Math.round(convert(q.revenue, "USD") / 1000000)}M</span>
                   <div className="w-full flex-1 flex items-end">
                     <div
-                      className="w-full rounded-t-lg transition-all duration-700 ease-out"
-                      style={{
-                        height: `${pct}%`,
-                        minHeight: 4,
-                        backgroundColor: lineColors[i],
-                        animationDelay: `${i * 120}ms`,
-                        animation: "barGrow 0.8s ease-out forwards",
-                      }}
+                      className="w-full rounded-t-lg transition-all duration-300"
+                      style={{ height: `${pct}%`, minHeight: 4, backgroundColor: lineColors[i] }}
                     />
                   </div>
-                  <span className="text-xs text-gray-600 font-semibold">{q.label}</span>
+                  <span className="text-xs text-gray-600 font-semibold shrink-0">{q.label}</span>
                 </div>
               );
             })}

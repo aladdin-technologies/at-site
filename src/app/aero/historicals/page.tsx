@@ -179,13 +179,15 @@ export default function HistoricalsPage() {
             const val = monthlyTotals[i];
             const pct = (val / maxMonthly) * 100;
             return (
-              <div key={m} className="flex-1 flex flex-col items-center gap-1 group relative">
-                <span className="text-[9px] text-gray-400 font-mono">{formatValue(val)}</span>
-                <div
-                  className="w-full rounded-t-md bg-blue-500 hover:bg-blue-600 transition-all duration-700 ease-out cursor-pointer"
-                  style={{ height: `${pct}%`, minHeight: 4, animation: `barGrow 0.8s ease-out ${i * 60}ms forwards` }}
-                />
-                <span className="text-[10px] text-gray-500">{m}</span>
+              <div key={m} className="flex-1 flex flex-col items-center gap-1 group relative h-full">
+                <span className="text-[9px] text-gray-400 font-mono shrink-0">{formatValue(val)}</span>
+                <div className="w-full flex-1 flex items-end">
+                  <div
+                    className="w-full rounded-t-md bg-blue-500 hover:bg-blue-600 transition-all duration-300 cursor-pointer"
+                    style={{ height: `${pct}%`, minHeight: 4 }}
+                  />
+                </div>
+                <span className="text-[10px] text-gray-500 shrink-0">{m}</span>
               </div>
             );
           })}

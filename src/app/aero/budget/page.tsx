@@ -193,20 +193,20 @@ export default function BudgetPage() {
             const budgetPct = (budget / maxVal) * 100;
             const variance = budget > 0 ? ((actual - budget) / budget) * 100 : 0;
             return (
-              <div key={m} className="flex-1 flex flex-col items-center gap-1 group relative">
-                <div className="w-full flex gap-0.5 items-end" style={{ height: "100%" }}>
+              <div key={m} className="flex-1 flex flex-col items-center gap-1 group relative h-full">
+                <div className="w-full flex-1 flex gap-0.5 items-end">
                   <div
                     className="flex-1 rounded-t-sm bg-gray-200 transition-all duration-500"
                     style={{ height: `${budgetPct}%`, minHeight: 2 }}
                     title={`Budget: ${symbol}${Math.round(convert(budget, "USD") / 1000000)}M`}
                   />
                   <div
-                    className={`flex-1 rounded-t-sm transition-all duration-700 ${actual >= budget ? "bg-emerald-500" : "bg-red-400"}`}
-                    style={{ height: `${actualPct}%`, minHeight: 2, animation: `barGrow 0.8s ease-out ${i * 60}ms forwards` }}
+                    className={`flex-1 rounded-t-sm transition-all duration-300 ${actual >= budget ? "bg-emerald-500" : "bg-red-400"}`}
+                    style={{ height: `${actualPct}%`, minHeight: 2 }}
                     title={`Actual: ${symbol}${Math.round(convert(actual, "USD") / 1000000)}M`}
                   />
                 </div>
-                <span className="text-[10px] text-gray-500">{m}</span>
+                <span className="text-[10px] text-gray-500 shrink-0">{m}</span>
 
                 {/* Hover tooltip */}
                 <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-20">
