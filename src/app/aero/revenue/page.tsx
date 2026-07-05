@@ -3,8 +3,8 @@
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import {
-  Plus, Trash2, X, ChevronDown, ChevronRight,
-  Building2, Plane, Tag, Network, Search, Gauge,
+  Plus, Trash2, X,
+  Building2, Plane, Tag, Search, Gauge,
 } from "lucide-react";
 
 interface Airport { id: string; code: string; name: string; country: string | null; city: string | null; latitude: number | null; longitude: number | null; airport_type: string | null; icao_code: string | null; }
@@ -17,10 +17,10 @@ interface ChargeRate {
   charge_type_id: string; driver_id: string; yield_rate: number; currency: string;
 }
 
-type Tab = "summary" | "airports" | "airlines" | "drivers" | "lines";
+type Tab = "airports" | "airlines" | "lines" | "drivers";
 
 export default function RevenueLinesPage() {
-  const [tab, setTab] = useState<Tab>("summary");
+  const [tab, setTab] = useState<Tab>("airports");
   const [airports, setAirports] = useState<Airport[]>([]);
   const [airlines, setAirlines] = useState<Airline[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
@@ -29,8 +29,6 @@ export default function RevenueLinesPage() {
   const [loading, setLoading] = useState(true);
   const [companyId, setCompanyId] = useState<string | null>(null);
 
-  const [expandedAirports, setExpandedAirports] = useState<Set<string>>(new Set());
-  const [expandedAirlines, setExpandedAirlines] = useState<Set<string>>(new Set());
 
   const [showAddAirport, setShowAddAirport] = useState(false);
   const [aptSearch, setAptSearch] = useState("");
@@ -115,13 +113,6 @@ export default function RevenueLinesPage() {
     return map;
   }, [rates]);
 
-  function toggleAirport(id: string) {
-    setExpandedAirports(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
-  }
-  function toggleAirline(aptId: string, alId: string) {
-    const key = `${aptId}:${alId}`;
-    setExpandedAirlines(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; });
-  }
 
   async function addAirportFromGlobal(ga: GlobalAirport) {
     const exists = airports.some(a => a.code === ga.iata_code);
@@ -233,82 +224,16 @@ export default function RevenueLinesPage() {
       {/* Tabs */}
       <div className="flex gap-1 mb-6 border-b border-gray-200">
         {([
-          { key: "summary" as Tab, label: "Summary", icon: Network },
           { key: "airports" as Tab, label: "Airports", icon: Building2 },
           { key: "airlines" as Tab, label: "Airlines", icon: Plane },
-          { key: "drivers" as Tab, label: "Drivers", icon: Gauge },
           { key: "lines" as Tab, label: "Revenue Lines", icon: Tag },
+          { key: "drivers" as Tab, label: "Drivers", icon: Gauge },
         ]).map(t => (
           <button key={t.key} onClick={() => setTab(t.key)} className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${tab === t.key ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
             <t.icon size={16} /> {t.label}
           </button>
         ))}
       </div>
-
-      {/* ===== SUMMARY TAB ===== */}
-      {tab === "summary" && (
-        <div>
-          <p className="text-xs text-gray-400 mb-4">Visual overview — Airport → Revenue Lines</p>
-          {airports.length === 0 ? (
-            <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-              <Network size={32} className="text-gray-300 mx-auto mb-3" />
-              <p className="text-sm text-gray-500 mb-1">No airports configured yet</p>
-              <p className="text-xs text-gray-400 mb-4">Start by adding airports, airlines, and revenue lines in the tabs above</p>
-              <button onClick={() => setTab("airports")} className="text-blue-600 text-sm font-semibold hover:underline">Add your first airport</button>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {airports.map(apt => {
-                const isExpanded = expandedAirports.has(apt.id);
-                const linesAtAirport = chargeTypes.filter(ct => {
-                  const ctApts = ct.applicable_airports || [];
-                  return ctApts.length === 0 || ctApts.includes(apt.id);
-                });
-                const airlinesAtAirport = airlines.filter(al => {
-                  const alApts = al.applicable_airports || [];
-                  return alApts.length === 0 || alApts.includes(apt.id);
-                });
-
-                return (
-                  <div key={apt.id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                    <div onClick={() => toggleAirport(apt.id)} className="flex items-center gap-3 px-5 py-3.5 hover:bg-gray-50/50 transition-colors cursor-pointer">
-                      <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
-                        <Building2 size={16} className="text-blue-500" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <span className="font-bold text-gray-900 text-sm">{apt.code}</span>
-                        <span className="text-sm text-gray-500 ml-2">{apt.name}</span>
-                      </div>
-                      <span className="text-[10px] text-gray-400 font-mono mr-2">{linesAtAirport.length} revenue line{linesAtAirport.length !== 1 ? "s" : ""}</span>
-                      {isExpanded ? <ChevronDown size={16} className="text-gray-400" /> : <ChevronRight size={16} className="text-gray-400" />}
-                    </div>
-
-                    {isExpanded && (
-                      <div className="border-t border-gray-100">
-                        {linesAtAirport.length > 0 ? linesAtAirport.map((ct, idx) => {
-                          const dr = ct.driver_id ? driverMap[ct.driver_id] : null;
-                          return (
-                            <div key={ct.id} className={`flex items-center gap-3 px-5 py-2.5 hover:bg-blue-50/30 transition-colors ${idx > 0 ? "border-t border-gray-50" : ""}`}>
-                              <div className="w-6 flex justify-center"><div className="w-px h-4 bg-blue-200" /></div>
-                              <Tag size={13} className="text-blue-400 shrink-0" />
-                              <span className="text-sm font-medium text-gray-800">{ct.name}</span>
-                              {dr && (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-600 font-medium">{dr.name}</span>
-                              )}
-                            </div>
-                          );
-                        }) : (
-                          <p className="px-5 py-4 text-xs text-gray-400 text-center">No revenue lines configured for this airport yet.</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
 
       {/* ===== AIRPORTS TAB ===== */}
       {tab === "airports" && (
