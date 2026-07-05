@@ -324,15 +324,18 @@ export default function RevenueLinesPage() {
           <div className="space-y-4">
             {airports.map(apt => (
               <div key={apt.id} className="bg-white rounded-xl border border-gray-200 shadow-sm hover:border-blue-200 transition-colors group overflow-hidden">
-                <div className="flex">
+                <div className="flex flex-col sm:flex-row">
                   {/* Map */}
                   {apt.latitude && apt.longitude && (
-                    <div className="w-48 shrink-0 hidden sm:block">
+                    <div className="sm:w-56 shrink-0 h-40 sm:h-auto bg-gray-100">
                       <img
-                        src={`https://maps.googleapis.com/maps/api/staticmap?center=${apt.latitude},${apt.longitude}&zoom=13&size=400x300&maptype=satellite&key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8`}
-                        alt={apt.name}
+                        src={`https://maps.googleapis.com/maps/api/staticmap?center=${apt.latitude},${apt.longitude}&zoom=13&size=500x300&maptype=satellite&key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8`}
+                        alt={`${apt.code} satellite view`}
                         className="w-full h-full object-cover"
-                        onError={(e) => { (e.target as HTMLImageElement).parentElement!.style.display = "none"; }}
+                        onError={(e) => {
+                          const el = e.target as HTMLImageElement;
+                          el.src = `https://tile.openstreetmap.org/12/${Math.floor((apt.longitude! + 180) / 360 * 4096)}/${Math.floor((1 - Math.log(Math.tan(apt.latitude! * Math.PI / 180) + 1 / Math.cos(apt.latitude! * Math.PI / 180)) / Math.PI) / 2 * 4096)}.png`;
+                        }}
                       />
                     </div>
                   )}
