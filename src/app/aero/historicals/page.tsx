@@ -5,30 +5,44 @@ import { supabase } from "@/lib/supabase";
 import { Calendar, Download, Upload } from "lucide-react";
 
 interface TrafficRow {
-  year: number;
-  month: number;
-  arr_pax_direct: number;
-  dep_pax_direct: number;
-  transfer_pax: number;
-  transit_pax: number;
-  total_movements: number;
-  total_mtow_tonnes: number;
+  year: number; month: number;
+  arr_pax_direct: number; dep_pax_direct: number; transfer_pax: number; transit_pax: number;
+  total_movements: number; total_mtow_tonnes: number;
   forecast_airlines: { code: string; name: string };
   forecast_airports: { code: string; name: string };
 }
+interface CfgAirport { id: string; code: string; name: string; }
+interface CfgAirline { id: string; code: string; name: string; applicable_airports: string[] | null; }
+interface CfgLine { id: string; name: string; applicable_airports: string[] | null; driver_id: string | null; }
+interface CfgDriver { id: string; name: string; unit: string; }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 export default function HistoricalsPage() {
   const [traffic, setTraffic] = useState<TrafficRow[]>([]);
+  const [cfgAirports, setCfgAirports] = useState<CfgAirport[]>([]);
+  const [cfgAirlines, setCfgAirlines] = useState<CfgAirline[]>([]);
+  const [cfgLines, setCfgLines] = useState<CfgLine[]>([]);
+  const [cfgDrivers, setCfgDrivers] = useState<CfgDriver[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState(2024);
+  const [templateYear, setTemplateYear] = useState(2025);
   const [metric, setMetric] = useState<"pax" | "movements" | "mtow">("pax");
 
   useEffect(() => {
     async function load() {
-      const res = await supabase.from("forecast_traffic").select("*, forecast_airlines(code, name), forecast_airports(code, name)");
-      setTraffic((res.data ?? []) as unknown as TrafficRow[]);
+      const [tRes, aRes, alRes, lRes, dRes] = await Promise.all([
+        supabase.from("forecast_traffic").select("*, forecast_airlines(code, name), forecast_airports(code, name)"),
+        supabase.from("forecast_airports").select("id, code, name").order("code"),
+        supabase.from("forecast_airlines").select("id, code, name, applicable_airports").order("code"),
+        supabase.from("forecast_charge_types").select("id, name, applicable_airports, driver_id").order("sort_order"),
+        supabase.from("forecast_drivers").select("id, name, unit").order("name"),
+      ]);
+      setTraffic((tRes.data ?? []) as unknown as TrafficRow[]);
+      setCfgAirports((aRes.data ?? []) as CfgAirport[]);
+      setCfgAirlines((alRes.data ?? []) as CfgAirline[]);
+      setCfgLines((lRes.data ?? []) as CfgLine[]);
+      setCfgDrivers((dRes.data ?? []) as CfgDriver[]);
       setLoading(false);
     }
     load();
@@ -44,6 +58,44 @@ export default function HistoricalsPage() {
     });
     return Array.from(map.entries()).map(([code, name]) => ({ code, name }));
   }, [traffic]);
+
+  function generateRevenueTemplate() {
+    const monthCols = MONTHS.map((m, i) => `${m}-${String(templateYear).slice(2)}`);
+    const header = ["Airport", "Airline", "Revenue Line", ...monthCols];
+    const rows = [header.join(",")];
+    for (const apt of cfgAirports) {
+      const airlinesAtApt = cfgAirlines.filter(al => { const a = al.applicable_airports || []; return a.length === 0 || a.includes(apt.id); });
+      const linesAtApt = cfgLines.filter(l => { const a = l.applicable_airports || []; return a.length === 0 || a.includes(apt.id); });
+      for (const al of airlinesAtApt) {
+        for (const line of linesAtApt) {
+          rows.push([apt.code, al.code, `"${line.name}"`, ...monthCols.map(() => "")].join(","));
+        }
+      }
+    }
+    return rows.join("\n");
+  }
+
+  function generateDriverTemplate() {
+    const monthCols = MONTHS.map((m) => `${m}-${String(templateYear).slice(2)}`);
+    const driverNames = cfgDrivers.map(d => d.name);
+    const header = ["Airport", "Airline", ...driverNames.map(n => `"${n}"`)];
+    const rows = [header.join(",")];
+    for (const apt of cfgAirports) {
+      const airlinesAtApt = cfgAirlines.filter(al => { const a = al.applicable_airports || []; return a.length === 0 || a.includes(apt.id); });
+      for (const al of airlinesAtApt) {
+        rows.push([apt.code, al.code, ...driverNames.map(() => "")].join(","));
+      }
+    }
+    return rows.join("\n");
+  }
+
+  function downloadCSV(content: string, filename: string) {
+    const blob = new Blob([content], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  }
 
   const yearData = useMemo(() => traffic.filter(t => t.year === selectedYear), [traffic, selectedYear]);
 
@@ -124,49 +176,41 @@ export default function HistoricalsPage() {
         </div>
       </div>
 
-      {/* Template actions */}
-      <div className="flex items-center gap-2 mb-6 flex-wrap">
-        <button
-          onClick={() => {
-            const header = ["Year","Month","Airport","Airline","Arriving Pax","Departing Pax","Transfer Pax","Transit Pax","Total Movements","MTOW (tonnes)"];
-            const rows = [header.join(",")];
-            for (const y of years) {
-              for (let m = 1; m <= 12; m++) {
-                for (const apt of airports) {
-                  rows.push([y, m, apt.code, "", "", "", "", "", "", ""].join(","));
-                }
-              }
-            }
-            const blob = new Blob([rows.join("\n")], { type: "text/csv" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url; a.download = "traffic_template.csv"; a.click();
-            URL.revokeObjectURL(url);
-          }}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-        >
-          <Download size={14} /> Download Driver Template
-        </button>
-        <button
-          onClick={() => {
-            const header = ["Year","Month","Airport","Revenue Line","Revenue Amount","Currency"];
-            const rows = [header.join(",")];
-            const blob = new Blob([rows.join("\n")], { type: "text/csv" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url; a.download = "revenue_template.csv"; a.click();
-            URL.revokeObjectURL(url);
-          }}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-        >
-          <Download size={14} /> Download Revenue Template
-        </button>
-        <button
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-200 bg-blue-50 text-xs font-medium text-blue-700 hover:bg-blue-100 transition-colors"
-        >
-          <Upload size={14} /> Upload Data
-        </button>
-        <span className="text-[10px] text-gray-400 ml-2">Templates are generated based on your configured revenue structure</span>
+      {/* Dynamic template generation */}
+      <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h2 className="text-sm font-semibold text-gray-900">Dynamic Templates</h2>
+            <p className="text-xs text-gray-500">Generated from your Revenue Lines configuration ({cfgAirports.length} airports × {cfgAirlines.length} airlines × {cfgLines.length} revenue lines)</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-gray-500">Year:</label>
+            <select value={templateYear} onChange={e => setTemplateYear(Number(e.target.value))} className="px-2 py-1 rounded-lg text-xs border border-gray-200 bg-white text-gray-900 outline-none">
+              {[2023, 2024, 2025, 2026, 2027, 2028].map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => downloadCSV(generateRevenueTemplate(), `revenue_template_${templateYear}.csv`)}
+            disabled={cfgAirports.length === 0}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-40"
+          >
+            <Download size={14} /> Revenue Template
+            <span className="text-[9px] text-gray-400 ml-1">({cfgAirports.length * cfgAirlines.length * cfgLines.length} rows)</span>
+          </button>
+          <button
+            onClick={() => downloadCSV(generateDriverTemplate(), `driver_template_${templateYear}.csv`)}
+            disabled={cfgAirports.length === 0}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-40"
+          >
+            <Download size={14} /> Driver Template
+            <span className="text-[9px] text-gray-400 ml-1">({cfgAirports.length * cfgAirlines.length} rows × {cfgDrivers.length} drivers)</span>
+          </button>
+          <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-blue-200 bg-blue-50 text-xs font-medium text-blue-700 hover:bg-blue-100 transition-colors">
+            <Upload size={14} /> Upload Data
+          </button>
+        </div>
       </div>
 
       {/* Monthly trend */}
