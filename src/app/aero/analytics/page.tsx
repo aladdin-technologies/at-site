@@ -241,10 +241,10 @@ export default function AnalyticsPage() {
               return (
                 <div key={q.label} className="flex-1 flex flex-col items-center gap-2 h-full">
                   <span className="text-xs text-gray-500 font-mono shrink-0">{symbol}{Math.round(convert(q.revenue, "USD") / 1000000)}M</span>
-                  <div className="w-full flex-1 flex items-end">
+                  <div className="w-full flex-1 flex items-end overflow-hidden">
                     <div
-                      className="w-full rounded-t-lg transition-all duration-300"
-                      style={{ height: `${pct}%`, minHeight: 4, backgroundColor: lineColors[i] }}
+                      className="w-full rounded-t-lg animate-[growUp_0.8s_ease-out_forwards]"
+                      style={{ height: `${pct}%`, minHeight: 4, backgroundColor: lineColors[i], animationDelay: `${i * 150}ms`, opacity: 0 }}
                     />
                   </div>
                   <span className="text-xs text-gray-600 font-semibold shrink-0">{q.label}</span>
@@ -253,9 +253,9 @@ export default function AnalyticsPage() {
             })}
           </div>
           <style>{`
-            @keyframes barGrow {
-              from { transform: scaleY(0); transform-origin: bottom; }
-              to { transform: scaleY(1); transform-origin: bottom; }
+            @keyframes growUp {
+              from { transform: scaleY(0); transform-origin: bottom; opacity: 0; }
+              to { transform: scaleY(1); transform-origin: bottom; opacity: 1; }
             }
           `}</style>
         </div>

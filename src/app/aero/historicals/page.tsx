@@ -181,10 +181,10 @@ export default function HistoricalsPage() {
             return (
               <div key={m} className="flex-1 flex flex-col items-center gap-1 group relative h-full">
                 <span className="text-[9px] text-gray-400 font-mono shrink-0">{formatValue(val)}</span>
-                <div className="w-full flex-1 flex items-end">
+                <div className="w-full flex-1 flex items-end overflow-hidden">
                   <div
-                    className="w-full rounded-t-md bg-blue-500 hover:bg-blue-600 transition-all duration-300 cursor-pointer"
-                    style={{ height: `${pct}%`, minHeight: 4 }}
+                    className="w-full rounded-t-md bg-blue-500 hover:bg-blue-600 transition-colors duration-300 cursor-pointer animate-[growUp_0.8s_ease-out_forwards]"
+                    style={{ height: `${pct}%`, minHeight: 4, animationDelay: `${i * 60}ms`, opacity: 0 }}
                   />
                 </div>
                 <span className="text-[10px] text-gray-500 shrink-0">{m}</span>
@@ -193,9 +193,9 @@ export default function HistoricalsPage() {
           })}
         </div>
         <style>{`
-          @keyframes barGrow {
-            from { transform: scaleY(0); transform-origin: bottom; }
-            to { transform: scaleY(1); transform-origin: bottom; }
+          @keyframes growUp {
+            from { transform: scaleY(0); transform-origin: bottom; opacity: 0; }
+            to { transform: scaleY(1); transform-origin: bottom; opacity: 1; }
           }
         `}</style>
       </div>

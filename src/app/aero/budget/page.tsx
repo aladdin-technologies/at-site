@@ -194,15 +194,15 @@ export default function BudgetPage() {
             const variance = budget > 0 ? ((actual - budget) / budget) * 100 : 0;
             return (
               <div key={m} className="flex-1 flex flex-col items-center gap-1 group relative h-full">
-                <div className="w-full flex-1 flex gap-0.5 items-end">
+                <div className="w-full flex-1 flex gap-0.5 items-end overflow-hidden">
                   <div
-                    className="flex-1 rounded-t-sm bg-gray-200 transition-all duration-500"
-                    style={{ height: `${budgetPct}%`, minHeight: 2 }}
+                    className="flex-1 rounded-t-sm bg-gray-200 animate-[growUp_0.6s_ease-out_forwards]"
+                    style={{ height: `${budgetPct}%`, minHeight: 2, animationDelay: `${i * 60}ms`, opacity: 0 }}
                     title={`Budget: ${symbol}${Math.round(convert(budget, "USD") / 1000000)}M`}
                   />
                   <div
-                    className={`flex-1 rounded-t-sm transition-all duration-300 ${actual >= budget ? "bg-emerald-500" : "bg-red-400"}`}
-                    style={{ height: `${actualPct}%`, minHeight: 2 }}
+                    className={`flex-1 rounded-t-sm ${actual >= budget ? "bg-emerald-500" : "bg-red-400"} animate-[growUp_0.8s_ease-out_forwards]`}
+                    style={{ height: `${actualPct}%`, minHeight: 2, animationDelay: `${i * 60 + 200}ms`, opacity: 0 }}
                     title={`Actual: ${symbol}${Math.round(convert(actual, "USD") / 1000000)}M`}
                   />
                 </div>
@@ -238,9 +238,9 @@ export default function BudgetPage() {
           </div>
         </div>
         <style>{`
-          @keyframes barGrow {
-            from { transform: scaleY(0); transform-origin: bottom; }
-            to { transform: scaleY(1); transform-origin: bottom; }
+          @keyframes growUp {
+            from { transform: scaleY(0); transform-origin: bottom; opacity: 0; }
+            to { transform: scaleY(1); transform-origin: bottom; opacity: 1; }
           }
         `}</style>
       </div>
