@@ -92,19 +92,19 @@ export default function ScenariosPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-1">Scenario Name</label>
-                <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="e.g. Base Case 2026" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-blue-400" />
+                <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="e.g. Base Case 2026" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-400" />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-1">Description</label>
-                <input value={newDesc} onChange={e => setNewDesc(e.target.value)} placeholder="Optional description" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-blue-400" />
+                <input value={newDesc} onChange={e => setNewDesc(e.target.value)} placeholder="Optional description" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-400" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1">Pax Growth (%/year)</label>
-                <input value={newPaxGrowth} onChange={e => setNewPaxGrowth(e.target.value)} type="number" step="0.1" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-blue-400 font-mono" />
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Traffic Growth (%/year)</label>
+                <input value={newPaxGrowth} onChange={e => setNewPaxGrowth(e.target.value)} type="number" step="0.1" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-400 font-mono" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-500 mb-1">Yield Escalation (%/year)</label>
-                <input value={newYieldEsc} onChange={e => setNewYieldEsc(e.target.value)} type="number" step="0.1" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-blue-400 font-mono" />
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Yield Growth (%/year)</label>
+                <input value={newYieldEsc} onChange={e => setNewYieldEsc(e.target.value)} type="number" step="0.1" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-400 font-mono" />
               </div>
             </div>
             <div className="flex gap-2">
@@ -139,8 +139,8 @@ export default function ScenariosPage() {
                       <div className="flex items-center gap-4 text-xs text-gray-400">
                         <span>Base: {s.base_year}</span>
                         <span>Forecast: {s.forecast_years} years</span>
-                        <span>Pax growth: {s.growth_assumptions?.pax_growth ?? 0}%</span>
-                        <span>Yield esc: {s.yield_assumptions?.annual_escalation ?? 0}%</span>
+                        <span>Traffic growth: {s.growth_assumptions?.pax_growth ?? 0}%</span>
+                        <span>Yield growth: {s.yield_assumptions?.annual_escalation ?? 0}%</span>
                       </div>
                     </div>
                     <div className="text-right text-xs text-gray-400">

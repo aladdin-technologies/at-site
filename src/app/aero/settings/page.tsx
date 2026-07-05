@@ -60,8 +60,6 @@ export default function SettingsPage() {
 
   // General settings
   const [inflation, setInflation] = useState("3.0");
-  const [yieldGrowth, setYieldGrowth] = useState("2.5");
-  const [trafficGrowth, setTrafficGrowth] = useState("5.0");
   const [fiscalStart, setFiscalStart] = useState("January");
   const [saved, setSaved] = useState(false);
 
@@ -211,21 +209,14 @@ export default function SettingsPage() {
             )}
           </div>
 
-          {/* Forecast Parameters */}
+          {/* Default Inflation */}
           <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 className="text-sm font-semibold text-gray-900 mb-4">Forecast Parameters</h2>
+            <h2 className="text-sm font-semibold text-gray-900 mb-1">Default Inflation Rate</h2>
+            <p className="text-xs text-gray-500 mb-4">Used as the default when creating new scenarios. Can be overridden per scenario.</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Inflation Rate (%)</label>
                 <input type="number" step="0.1" value={inflation} onChange={e => setInflation(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Yield Growth Rate (%)</label>
-                <input type="number" step="0.1" value={yieldGrowth} onChange={e => setYieldGrowth(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Traffic Growth Rate (%)</label>
-                <input type="number" step="0.1" value={trafficGrowth} onChange={e => setTrafficGrowth(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20" />
               </div>
             </div>
           </div>
