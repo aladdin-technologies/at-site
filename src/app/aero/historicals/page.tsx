@@ -74,11 +74,15 @@ export default function HistoricalsPage() {
   }
 
   function generateTrafficTemplate() {
-    const header = ["Airport", "Airline", "Driver", "Year", ...MONTHS];
+    const header = ["Airport", "Airline", "Metric", "Year", ...MONTHS];
     const rows = [header.join(",")];
+    const kpiLines = ["Total Passengers", "Total Movements"];
     for (const apt of cfgAirports) {
       const airlinesAtApt = cfgAirlines.filter(al => { const a = al.applicable_airports || []; return a.length === 0 || a.includes(apt.id); });
       for (const al of airlinesAtApt) {
+        for (const kpi of kpiLines) {
+          rows.push([apt.code, al.code, kpi, "", ...MONTHS.map(() => "")].join(","));
+        }
         for (const dr of cfgDrivers) {
           rows.push([apt.code, al.code, `"${dr.name}"`, "", ...MONTHS.map(() => "")].join(","));
         }
