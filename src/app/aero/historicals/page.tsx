@@ -172,79 +172,61 @@ export default function HistoricalsPage() {
 
       {/* Data Coverage */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between flex-wrap gap-3">
           <div>
             <h2 className="text-sm font-semibold text-gray-900">Data Coverage</h2>
             <p className="text-xs text-gray-500 mt-0.5">
               {totalUploaded > 0
-                ? `${totalUploaded.toLocaleString()} data points uploaded across ${dataYears.length} year${dataYears.length !== 1 ? "s" : ""}`
-                : "No data uploaded yet — download a template and upload your historical data"
+                ? `${totalUploaded.toLocaleString()} data points across ${dataYears.length} year${dataYears.length !== 1 ? "s" : ""}`
+                : "No data uploaded yet — download a template to get started"
               }
             </p>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3 text-[10px]">
-              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-emerald-500" /> Complete</span>
-              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-amber-400" /> Partial</span>
-              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-gray-100 border border-gray-200" /> Missing</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 text-[10px] mr-2">
+              <span className="flex items-center gap-1"><CheckCircle2 size={12} className="text-emerald-500" /> Uploaded</span>
+              <span className="flex items-center gap-1"><MinusCircle size={12} className="text-gray-300" /> Missing</span>
+            </div>
+            <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+              <button onClick={() => setViewMode("revenue")} className={`px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === "revenue" ? "bg-blue-50 text-blue-700" : "text-gray-500 hover:bg-gray-50"}`}>Revenue</button>
+              <button onClick={() => setViewMode("traffic")} className={`px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === "traffic" ? "bg-purple-50 text-purple-700" : "text-gray-500 hover:bg-gray-50"}`}>Traffic</button>
             </div>
           </div>
         </div>
 
-        {/* Heatmap by Airport × Airline × Year */}
+        {/* Monthly heatmap by Year × Month */}
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
               <tr className="bg-gray-50/80 border-b border-gray-100">
-                <th className="text-left px-4 py-2.5 font-semibold text-gray-500 uppercase sticky left-0 bg-gray-50/80 z-10">Airport</th>
-                <th className="text-left px-3 py-2.5 font-semibold text-gray-500 uppercase">Airline</th>
-                {dataYears.map(y => (
-                  <th key={y} className="text-center px-3 py-2.5 font-semibold text-gray-500">{y}</th>
+                <th className="text-left px-4 py-2.5 font-semibold text-gray-500 uppercase sticky left-0 bg-gray-50/80 z-10">Year</th>
+                {MONTHS.map(m => (
+                  <th key={m} className="text-center px-2 py-2.5 font-semibold text-gray-500">{m}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {cfgAirports.map(apt => {
-                const airlinesAtApt = cfgAirlines.filter(al => {
-                  const a = al.applicable_airports || [];
-                  return a.length === 0 || a.includes(apt.id);
-                });
-
-                return airlinesAtApt.map((al, alIdx) => (
-                  <tr key={`${apt.id}-${al.id}`} className={`border-b border-gray-50 hover:bg-gray-50/30 transition-colors ${alIdx === 0 ? "border-t border-gray-100" : ""}`}>
-                    <td className="px-4 py-2 sticky left-0 bg-white z-10">
-                      {alIdx === 0 && (
-                        <div>
-                          <span className="font-bold text-gray-900 font-mono">{apt.code}</span>
-                          <span className="text-gray-400 ml-1.5 hidden sm:inline">{apt.name}</span>
-                        </div>
-                      )}
+              {dataYears.map(year => {
+                return (
+                  <tr key={year} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
+                    <td className="px-4 py-2.5 sticky left-0 bg-white z-10">
+                      <span className="font-bold text-gray-900 font-mono">{year}</span>
                     </td>
-                    <td className="px-3 py-2">
-                      <span className="text-[10px] font-semibold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded font-mono">{al.code}</span>
-                    </td>
-                    {dataYears.map(year => {
-                      const status = getCoverage(apt.code, al.code, year);
+                    {MONTHS.map((_, mIdx) => {
+                      const month = mIdx + 1;
+                      const hasData = trafficData.some(t => t.year === year && t.month === month);
                       return (
-                        <td key={year} className="px-3 py-2 text-center">
-                          {status === "full" ? (
-                            <span className="inline-flex w-6 h-6 rounded bg-emerald-50 items-center justify-center" title="12/12 months">
-                              <CheckCircle2 size={14} className="text-emerald-500" />
-                            </span>
-                          ) : status === "partial" ? (
-                            <span className="inline-flex w-6 h-6 rounded bg-amber-50 items-center justify-center" title="Partial data">
-                              <AlertCircle size={14} className="text-amber-500" />
-                            </span>
+                        <td key={mIdx} className="px-2 py-2.5 text-center">
+                          {hasData ? (
+                            <CheckCircle2 size={16} className="text-emerald-500 mx-auto" />
                           ) : (
-                            <span className="inline-flex w-6 h-6 rounded bg-gray-50 items-center justify-center" title="No data">
-                              <MinusCircle size={14} className="text-gray-300" />
-                            </span>
+                            <MinusCircle size={16} className="text-gray-200 mx-auto" />
                           )}
                         </td>
                       );
                     })}
                   </tr>
-                ));
+                );
               })}
             </tbody>
           </table>
