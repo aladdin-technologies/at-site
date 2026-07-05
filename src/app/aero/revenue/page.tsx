@@ -587,11 +587,10 @@ export default function RevenueLinesPage() {
                   <div className="flex gap-3">
                     {/* Left content */}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+                      <div className="mb-2">
+                        <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
                           <Tag size={14} className="text-blue-500" />
                         </div>
-                        <button onClick={e => { e.stopPropagation(); deleteRevenueLine(ct.id); }} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-all ml-auto shrink-0"><Trash2 size={13} /></button>
                       </div>
                       <h3 className="font-semibold text-gray-900 text-sm">{ct.name}</h3>
                       {ct.driver_id && driverMap[ct.driver_id] && (
@@ -661,7 +660,11 @@ export default function RevenueLinesPage() {
                     </div>
                   </div>
                 </div>
-                <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-2">
+                <div className="px-6 py-4 border-t border-gray-100 flex items-center gap-2">
+                  {lineModalMode === "edit" && lineModalId && (
+                    <button onClick={() => { deleteRevenueLine(lineModalId); setShowLineModal(false); }} className="text-xs text-red-500 hover:text-red-700 hover:underline">Delete</button>
+                  )}
+                  <div className="flex-1" />
                   <button onClick={() => setShowLineModal(false)} className="px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
                   <button onClick={saveRevenueLine} disabled={!newLineName.trim()} className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-40">
                     {lineModalMode === "edit" ? "Save Changes" : "Add"}
