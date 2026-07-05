@@ -228,15 +228,15 @@ export default function ForecastDashboard() {
               const yoyDelta = prevYearRev > 0 ? ((val - prevYearRev) / prevYearRev * 100) : 0;
 
               return (
-                <div key={m} className="flex-1 flex flex-col items-center gap-1 group relative h-full">
-                  <span className="text-[9px] text-gray-400 font-mono shrink-0">{symbol}{Math.round(convert(val, "USD") / 1000000)}M</span>
-                  <div className="w-full flex-1 flex items-end overflow-hidden">
+                <div key={m} className="flex-1 flex flex-col items-center group relative h-full">
+                  <div className="w-full flex-1 flex flex-col items-center justify-end overflow-hidden">
+                    <span className="text-[9px] text-gray-500 font-mono mb-1 shrink-0">{symbol}{Math.round(convert(val, "USD") / 1000000)}M</span>
                     <div
                       className="w-full rounded-t-md bg-blue-500 hover:bg-blue-600 transition-colors duration-300 cursor-pointer animate-[growUp_0.8s_ease-out_forwards]"
                       style={{ height: `${pct}%`, minHeight: 4, animationDelay: `${i * 80}ms`, opacity: 0 }}
                     />
                   </div>
-                  <span className="text-[10px] text-gray-500 shrink-0">{m}</span>
+                  <span className="text-[10px] text-gray-500 shrink-0 mt-1">{m}</span>
 
                   {/* Hover tooltip */}
                   <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-20">

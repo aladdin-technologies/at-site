@@ -4,23 +4,25 @@ import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import {
   Plus, Trash2, X, ChevronDown, ChevronRight,
-  Building2, Plane, Tag, Network, Search,
+  Building2, Plane, Tag, Network, Search, Gauge,
 } from "lucide-react";
 
 interface Airport { id: string; code: string; name: string; country: string | null; }
 interface Airline { id: string; code: string; name: string; }
-interface ChargeType { id: string; name: string; description: string | null; }
+interface Driver { id: string; name: string; unit: string; description: string | null; }
+interface ChargeType { id: string; name: string; description: string | null; driver_id: string | null; }
 interface ChargeRate {
   id: string; airport_id: string; airline_id: string | null;
   charge_type_id: string; driver_id: string; yield_rate: number; currency: string;
 }
 
-type Tab = "summary" | "airports" | "airlines" | "lines";
+type Tab = "summary" | "airports" | "airlines" | "drivers" | "lines";
 
 export default function RevenueLinesPage() {
   const [tab, setTab] = useState<Tab>("summary");
   const [airports, setAirports] = useState<Airport[]>([]);
   const [airlines, setAirlines] = useState<Airline[]>([]);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
   const [chargeTypes, setChargeTypes] = useState<ChargeType[]>([]);
   const [rates, setRates] = useState<ChargeRate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,9 +41,15 @@ export default function RevenueLinesPage() {
   const [newAlCode, setNewAlCode] = useState("");
   const [newAlName, setNewAlName] = useState("");
 
+  const [showAddDriver, setShowAddDriver] = useState(false);
+  const [newDriverName, setNewDriverName] = useState("");
+  const [newDriverUnit, setNewDriverUnit] = useState("units");
+  const [newDriverDesc, setNewDriverDesc] = useState("");
+
   const [showAddLine, setShowAddLine] = useState(false);
   const [newLineName, setNewLineName] = useState("");
   const [newLineDesc, setNewLineDesc] = useState("");
+  const [newLineDriverId, setNewLineDriverId] = useState("");
 
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -55,14 +63,16 @@ export default function RevenueLinesPage() {
     const compRes = await supabase.from("forecast_companies").select("id").limit(1);
     const cid = compRes.data?.[0]?.id;
     if (cid) setCompanyId(cid);
-    const [aRes, alRes, ctRes, rRes] = await Promise.all([
+    const [aRes, alRes, dRes, ctRes, rRes] = await Promise.all([
       supabase.from("forecast_airports").select("id, code, name, country").order("code"),
       supabase.from("forecast_airlines").select("id, code, name").order("code"),
-      supabase.from("forecast_charge_types").select("id, name, description").order("sort_order"),
+      supabase.from("forecast_drivers").select("*").order("name"),
+      supabase.from("forecast_charge_types").select("id, name, description, driver_id").order("sort_order"),
       supabase.from("forecast_charge_rates").select("id, airport_id, airline_id, charge_type_id, driver_id, yield_rate, currency"),
     ]);
     setAirports((aRes.data ?? []) as Airport[]);
     setAirlines((alRes.data ?? []) as Airline[]);
+    setDrivers((dRes.data ?? []) as Driver[]);
     setChargeTypes((ctRes.data ?? []) as ChargeType[]);
     setRates((rRes.data ?? []) as ChargeRate[]);
     setLoading(false);
@@ -70,6 +80,7 @@ export default function RevenueLinesPage() {
 
   const chargeMap = useMemo(() => Object.fromEntries(chargeTypes.map(c => [c.id, c])), [chargeTypes]);
   const airlineMap = useMemo(() => Object.fromEntries(airlines.map(a => [a.id, a])), [airlines]);
+  const driverMap = useMemo(() => Object.fromEntries(drivers.map(d => [d.id, d])), [drivers]);
 
   const ratesByAirport = useMemo(() => {
     const map: Record<string, ChargeRate[]> = {};
@@ -107,10 +118,21 @@ export default function RevenueLinesPage() {
     setEditingId(null); loadAll();
   }
 
+  async function addDriver() {
+    if (!newDriverName.trim()) return;
+    await supabase.from("forecast_drivers").insert({ company_id: companyId, name: newDriverName.trim(), unit: newDriverUnit, description: newDriverDesc.trim() || null });
+    setShowAddDriver(false); setNewDriverName(""); setNewDriverUnit("units"); setNewDriverDesc(""); loadAll();
+  }
+  async function deleteDriver(id: string) { await supabase.from("forecast_drivers").delete().eq("id", id); loadAll(); }
+  async function updateDriver(id: string) {
+    await supabase.from("forecast_drivers").update({ name: editFields.name, unit: editFields.unit || "units", description: editFields.desc || null }).eq("id", id);
+    setEditingId(null); loadAll();
+  }
+
   async function addRevenueLine() {
     if (!newLineName.trim()) return;
-    await supabase.from("forecast_charge_types").insert({ company_id: companyId, name: newLineName.trim(), description: newLineDesc.trim() || null, sort_order: chargeTypes.length });
-    setShowAddLine(false); setNewLineName(""); setNewLineDesc(""); loadAll();
+    await supabase.from("forecast_charge_types").insert({ company_id: companyId, name: newLineName.trim(), description: newLineDesc.trim() || null, driver_id: newLineDriverId || null, sort_order: chargeTypes.length });
+    setShowAddLine(false); setNewLineName(""); setNewLineDesc(""); setNewLineDriverId(""); loadAll();
   }
   async function deleteRevenueLine(id: string) { await supabase.from("forecast_charge_types").delete().eq("id", id); loadAll(); }
   async function updateRevenueLine(id: string) {
@@ -133,10 +155,12 @@ export default function RevenueLinesPage() {
       </div>
 
       {/* Stats strip */}
-      <div className="flex items-center gap-4 mb-5 text-xs text-gray-400 font-mono">
+      <div className="flex items-center gap-4 mb-5 text-xs text-gray-400 font-mono flex-wrap">
         <span>{airports.length} airport{airports.length !== 1 ? "s" : ""}</span>
         <span>·</span>
         <span>{airlines.length} airline{airlines.length !== 1 ? "s" : ""}</span>
+        <span>·</span>
+        <span>{drivers.length} driver{drivers.length !== 1 ? "s" : ""}</span>
         <span>·</span>
         <span>{chargeTypes.length} revenue line{chargeTypes.length !== 1 ? "s" : ""}</span>
       </div>
@@ -147,6 +171,7 @@ export default function RevenueLinesPage() {
           { key: "summary" as Tab, label: "Summary", icon: Network },
           { key: "airports" as Tab, label: "Airports", icon: Building2 },
           { key: "airlines" as Tab, label: "Airlines", icon: Plane },
+          { key: "drivers" as Tab, label: "Drivers", icon: Gauge },
           { key: "lines" as Tab, label: "Revenue Lines", icon: Tag },
         ]).map(t => (
           <button key={t.key} onClick={() => setTab(t.key)} className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${tab === t.key ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
@@ -424,6 +449,102 @@ export default function RevenueLinesPage() {
         </div>
       )}
 
+      {/* ===== DRIVERS TAB ===== */}
+      {tab === "drivers" && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm text-gray-500">{drivers.length} driver{drivers.length !== 1 ? "s" : ""} — traffic metrics that drive revenue</p>
+            <button onClick={() => setShowAddDriver(true)} className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors">
+              <Plus size={16} /> Add Driver
+            </button>
+          </div>
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50/80 border-b border-gray-100">
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Driver Name</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Unit</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden sm:table-cell">Description</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Used By</th>
+                  <th className="w-20"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {drivers.map(d => {
+                  const usedCount = chargeTypes.filter(c => c.driver_id === d.id).length;
+                  const isEd = editingId === d.id;
+                  return (
+                    <tr key={d.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors group">
+                      <td className="px-5 py-3">
+                        {isEd ? <input value={editFields.name || ""} onChange={e => setEditFields(p => ({ ...p, name: e.target.value }))} onKeyDown={e => e.key === "Enter" && updateDriver(d.id)} className="w-full px-2 py-1 rounded border border-blue-400 text-sm text-gray-900 outline-none" autoFocus />
+                        : <div className="flex items-center gap-2"><Gauge size={14} className="text-purple-500" /><span className="font-medium text-gray-900">{d.name}</span></div>}
+                      </td>
+                      <td className="px-4 py-3">
+                        {isEd ? <select value={editFields.unit || "units"} onChange={e => setEditFields(p => ({ ...p, unit: e.target.value }))} className="px-2 py-1 rounded border border-blue-400 text-xs text-gray-900 outline-none">
+                          <option value="pax">pax</option><option value="movements">movements</option><option value="tonnes">tonnes</option><option value="hours">hours</option><option value="units">units</option><option value="screenings">screenings</option><option value="sqm">sqm</option>
+                        </select>
+                        : <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 font-medium">{d.unit}</span>}
+                      </td>
+                      <td className="px-4 py-3 text-gray-500 text-xs hidden sm:table-cell">
+                        {isEd ? <input value={editFields.desc || ""} onChange={e => setEditFields(p => ({ ...p, desc: e.target.value }))} onKeyDown={e => e.key === "Enter" && updateDriver(d.id)} className="w-full px-2 py-1 rounded border border-blue-400 text-xs text-gray-900 outline-none" />
+                        : (d.description || "—")}
+                      </td>
+                      <td className="px-4 py-3 text-right font-mono text-gray-500 text-xs">{usedCount} line{usedCount !== 1 ? "s" : ""}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          {isEd ? (
+                            <>
+                              <button onClick={() => updateDriver(d.id)} className="text-emerald-500 hover:text-emerald-700 text-[10px] font-medium">Save</button>
+                              <button onClick={() => setEditingId(null)} className="text-gray-400 hover:text-gray-600 text-[10px]">Cancel</button>
+                            </>
+                          ) : (
+                            <>
+                              <button onClick={() => startEdit(d.id, { name: d.name, unit: d.unit, desc: d.description || "" })} className="text-gray-300 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-all text-[10px] font-medium">Edit</button>
+                              <button onClick={() => deleteDriver(d.id)} className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"><Trash2 size={14} /></button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {showAddDriver && (
+            <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4" onClick={() => setShowAddDriver(false)}>
+              <div className="bg-white rounded-xl border border-gray-200 shadow-xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                  <h2 className="text-sm font-bold text-gray-900">Add Driver</h2>
+                  <button onClick={() => setShowAddDriver(false)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+                </div>
+                <div className="p-6 space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Driver Name *</label>
+                    <input value={newDriverName} onChange={e => setNewDriverName(e.target.value)} placeholder="e.g. Departing Pax Direct" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500" autoFocus />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Unit</label>
+                    <select value={newDriverUnit} onChange={e => setNewDriverUnit(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500">
+                      <option value="pax">pax</option><option value="movements">movements</option><option value="tonnes">tonnes</option><option value="hours">hours</option><option value="units">units</option><option value="screenings">screenings</option><option value="sqm">sqm</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                    <input value={newDriverDesc} onChange={e => setNewDriverDesc(e.target.value)} placeholder="Optional" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500" />
+                  </div>
+                </div>
+                <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-2">
+                  <button onClick={() => setShowAddDriver(false)} className="px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
+                  <button onClick={addDriver} disabled={!newDriverName.trim()} className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-40">Add Driver</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ===== REVENUE LINES TAB ===== */}
       {tab === "lines" && (
         <div>
@@ -465,6 +586,9 @@ export default function RevenueLinesPage() {
                   ) : (
                     <>
                       <h3 className="font-semibold text-gray-900 text-sm">{ct.name}</h3>
+                      {ct.driver_id && driverMap[ct.driver_id] && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 font-medium inline-block mt-1">{driverMap[ct.driver_id].name}</span>
+                      )}
                       {ct.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{ct.description}</p>}
                     </>
                   )}
@@ -485,6 +609,14 @@ export default function RevenueLinesPage() {
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Revenue Line Name *</label>
                     <input value={newLineName} onChange={e => setNewLineName(e.target.value)} placeholder="e.g. Landing Charges" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500" autoFocus />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Driver</label>
+                    <select value={newLineDriverId} onChange={e => setNewLineDriverId(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500">
+                      <option value="">Select driver</option>
+                      {drivers.map(d => <option key={d.id} value={d.id}>{d.name} ({d.unit})</option>)}
+                    </select>
+                    <p className="text-[10px] text-gray-400 mt-1">What traffic metric drives this revenue line?</p>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
