@@ -7,7 +7,8 @@ import {
   Building2, Plane, Tag, Network, Search, Gauge,
 } from "lucide-react";
 
-interface Airport { id: string; code: string; name: string; country: string | null; }
+interface Airport { id: string; code: string; name: string; country: string | null; city: string | null; latitude: number | null; longitude: number | null; airport_type: string | null; }
+interface GlobalAirport { id: string; iata_code: string; name: string; country_name: string; city: string; latitude: number; longitude: number; airport_type: string; }
 interface Airline { id: string; code: string; name: string; applicable_airports: string[] | null; }
 interface Driver { id: string; name: string; unit: string; description: string | null; }
 interface ChargeType { id: string; name: string; description: string | null; driver_id: string | null; applicable_airports: string[] | null; }
@@ -31,11 +32,11 @@ export default function RevenueLinesPage() {
   const [expandedAirports, setExpandedAirports] = useState<Set<string>>(new Set());
   const [expandedAirlines, setExpandedAirlines] = useState<Set<string>>(new Set());
 
-  // Add forms
+  // Global airports for search
+  const [globalAirports, setGlobalAirports] = useState<GlobalAirport[]>([]);
   const [showAddAirport, setShowAddAirport] = useState(false);
-  const [newAptCode, setNewAptCode] = useState("");
-  const [newAptName, setNewAptName] = useState("");
-  const [newAptCountry, setNewAptCountry] = useState("");
+  const [aptSearch, setAptSearch] = useState("");
+  const [aptSearchResults, setAptSearchResults] = useState<GlobalAirport[]>([]);
 
   const [showAirlineModal, setShowAirlineModal] = useState(false);
   const [airlineModalMode, setAirlineModalMode] = useState<"add" | "edit">("add");
@@ -69,20 +70,33 @@ export default function RevenueLinesPage() {
     const compRes = await supabase.from("forecast_companies").select("id").limit(1);
     const cid = compRes.data?.[0]?.id;
     if (cid) setCompanyId(cid);
-    const [aRes, alRes, dRes, ctRes, rRes] = await Promise.all([
-      supabase.from("forecast_airports").select("id, code, name, country").order("code"),
+    const [aRes, alRes, dRes, ctRes, rRes, gRes] = await Promise.all([
+      supabase.from("forecast_airports").select("id, code, name, country, city, latitude, longitude, airport_type").order("code"),
       supabase.from("forecast_airlines").select("id, code, name, applicable_airports").order("code"),
       supabase.from("forecast_drivers").select("*").order("name"),
       supabase.from("forecast_charge_types").select("id, name, description, driver_id, applicable_airports").order("sort_order"),
       supabase.from("forecast_charge_rates").select("id, airport_id, airline_id, charge_type_id, driver_id, yield_rate, currency"),
+      supabase.from("airports").select("id, iata_code, name, country_name, city, latitude, longitude, airport_type").not("iata_code", "is", null).not("iata_code", "eq", "").order("iata_code").limit(5000),
     ]);
     setAirports((aRes.data ?? []) as Airport[]);
+    setGlobalAirports((gRes.data ?? []) as unknown as GlobalAirport[]);
     setAirlines((alRes.data ?? []) as Airline[]);
     setDrivers((dRes.data ?? []) as Driver[]);
     setChargeTypes((ctRes.data ?? []) as ChargeType[]);
     setRates((rRes.data ?? []) as ChargeRate[]);
     setLoading(false);
   }
+
+  const existingCodes = useMemo(() => new Set(airports.map(a => a.code)), [airports]);
+
+  useEffect(() => {
+    if (!aptSearch || aptSearch.length < 2) { setAptSearchResults([]); return; }
+    const q = aptSearch.toLowerCase();
+    setAptSearchResults(globalAirports.filter(ga =>
+      !existingCodes.has(ga.iata_code) &&
+      (ga.iata_code?.toLowerCase().includes(q) || ga.name?.toLowerCase().includes(q) || ga.city?.toLowerCase().includes(q) || ga.country_name?.toLowerCase().includes(q))
+    ).slice(0, 20));
+  }, [aptSearch, globalAirports, existingCodes]);
 
   const chargeMap = useMemo(() => Object.fromEntries(chargeTypes.map(c => [c.id, c])), [chargeTypes]);
   const airlineMap = useMemo(() => Object.fromEntries(airlines.map(a => [a.id, a])), [airlines]);
@@ -102,16 +116,17 @@ export default function RevenueLinesPage() {
     setExpandedAirlines(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; });
   }
 
-  async function addAirport() {
-    if (!newAptCode.trim() || !newAptName.trim()) return;
-    await supabase.from("forecast_airports").insert({ company_id: companyId, code: newAptCode.trim().toUpperCase(), name: newAptName.trim(), country: newAptCountry.trim() || null });
-    setShowAddAirport(false); setNewAptCode(""); setNewAptName(""); setNewAptCountry(""); loadAll();
+  async function addAirportFromGlobal(ga: GlobalAirport) {
+    const exists = airports.some(a => a.code === ga.iata_code);
+    if (exists) return;
+    await supabase.from("forecast_airports").insert({
+      company_id: companyId, code: ga.iata_code, name: ga.name,
+      country: ga.country_name, city: ga.city,
+      latitude: ga.latitude, longitude: ga.longitude, airport_type: ga.airport_type,
+    });
+    setShowAddAirport(false); setAptSearch(""); loadAll();
   }
   async function deleteAirport(id: string) { await supabase.from("forecast_airports").delete().eq("id", id); loadAll(); }
-  async function updateAirport(id: string) {
-    await supabase.from("forecast_airports").update({ code: editFields.code?.toUpperCase(), name: editFields.name, country: editFields.country || null }).eq("id", id);
-    setEditingId(null); loadAll();
-  }
 
   function openAddAirlineModal() {
     setAirlineModalMode("add"); setAirlineModalId(null);
@@ -292,89 +307,103 @@ export default function RevenueLinesPage() {
         <div>
           <div className="flex items-center justify-between mb-4">
             <p className="text-sm text-gray-500">{airports.length} airport{airports.length !== 1 ? "s" : ""} in your portfolio</p>
-            <button onClick={() => setShowAddAirport(true)} className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors">
+            <button onClick={() => { setShowAddAirport(true); setAptSearch(""); }} className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors">
               <Plus size={16} /> Add Airport
             </button>
           </div>
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50/80 border-b border-gray-100">
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Code</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Name</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden sm:table-cell">Country</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Revenue Lines</th>
-                  <th className="w-10"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {airports.map(apt => {
-                  const linesAtApt = chargeTypes.filter(ct => { const a = ct.applicable_airports || []; return a.length === 0 || a.includes(apt.id); });
-                  const isEd = editingId === apt.id;
-                  return (
-                    <tr key={apt.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors group">
-                      <td className="px-5 py-3">
-                        {isEd ? <input value={editFields.code || ""} onChange={e => setEditFields(p => ({ ...p, code: e.target.value }))} onKeyDown={e => e.key === "Enter" && updateAirport(apt.id)} className="w-16 px-2 py-1 rounded border border-blue-400 text-sm text-gray-900 font-mono uppercase outline-none" autoFocus /> : <span className="font-bold text-gray-900 font-mono">{apt.code}</span>}
-                      </td>
-                      <td className="px-4 py-3">
-                        {isEd ? <input value={editFields.name || ""} onChange={e => setEditFields(p => ({ ...p, name: e.target.value }))} onKeyDown={e => e.key === "Enter" && updateAirport(apt.id)} className="w-full px-2 py-1 rounded border border-blue-400 text-sm text-gray-900 outline-none" /> : <span className="text-gray-700">{apt.name}</span>}
-                      </td>
-                      <td className="px-4 py-3 hidden sm:table-cell">
-                        {isEd ? <input value={editFields.country || ""} onChange={e => setEditFields(p => ({ ...p, country: e.target.value }))} onKeyDown={e => e.key === "Enter" && updateAirport(apt.id)} className="w-full px-2 py-1 rounded border border-blue-400 text-sm text-gray-900 outline-none" /> : <span className="text-gray-500 text-xs">{apt.country || "—"}</span>}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-wrap gap-1">
-                          {linesAtApt.map(ct => (
-                            <span key={ct.id} className="text-[9px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-medium">{ct.name}</span>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1">
-                          {isEd ? (
-                            <>
-                              <button onClick={() => updateAirport(apt.id)} className="text-emerald-500 hover:text-emerald-700 text-[10px] font-medium">Save</button>
-                              <button onClick={() => setEditingId(null)} className="text-gray-400 hover:text-gray-600 text-[10px]">Cancel</button>
-                            </>
-                          ) : (
-                            <>
-                              <button onClick={() => startEdit(apt.id, { code: apt.code, name: apt.name, country: apt.country || "" })} className="text-gray-300 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-all text-[10px] font-medium">Edit</button>
-                              <button onClick={() => deleteAirport(apt.id)} className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"><Trash2 size={14} /></button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+
+          {/* Airport cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {airports.map(apt => (
+              <div key={apt.id} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:border-blue-200 transition-colors group relative">
+                <button onClick={() => deleteAirport(apt.id)} className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-all"><Trash2 size={13} /></button>
+                <div className="flex items-start gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+                    <Building2 size={18} className="text-blue-500" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-gray-900 text-lg font-mono leading-tight">{apt.code}</p>
+                    <p className="text-sm text-gray-700">{apt.name}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                  {apt.country && (
+                    <div><span className="text-gray-400">Country</span><p className="text-gray-700 font-medium">{apt.country}</p></div>
+                  )}
+                  {apt.city && (
+                    <div><span className="text-gray-400">City</span><p className="text-gray-700 font-medium">{apt.city}</p></div>
+                  )}
+                  {apt.latitude && apt.longitude && (
+                    <div><span className="text-gray-400">Coordinates</span><p className="text-gray-600 font-mono text-[10px]">{apt.latitude.toFixed(4)}, {apt.longitude.toFixed(4)}</p></div>
+                  )}
+                  {apt.airport_type && (
+                    <div><span className="text-gray-400">Type</span><p className="text-gray-700 font-medium capitalize">{apt.airport_type}</p></div>
+                  )}
+                </div>
+                {apt.latitude && apt.longitude && (
+                  <div className="mt-3 rounded-lg overflow-hidden border border-gray-100 h-24">
+                    <img
+                      src={`https://maps.googleapis.com/maps/api/staticmap?center=${apt.latitude},${apt.longitude}&zoom=12&size=400x120&maptype=satellite&key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8`}
+                      alt={apt.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
 
+          {/* Add Airport Modal — searchable global list */}
           {showAddAirport && (
             <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4" onClick={() => setShowAddAirport(false)}>
-              <div className="bg-white rounded-xl border border-gray-200 shadow-xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
+              <div className="bg-white rounded-xl border border-gray-200 shadow-xl w-full max-w-lg" onClick={e => e.stopPropagation()}>
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                  <h2 className="text-sm font-bold text-gray-900">Add Airport</h2>
+                  <div>
+                    <h2 className="text-sm font-bold text-gray-900">Add Airport</h2>
+                    <p className="text-xs text-gray-500 mt-0.5">Search from {globalAirports.length.toLocaleString()} airports worldwide</p>
+                  </div>
                   <button onClick={() => setShowAddAirport(false)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
                 </div>
-                <div className="p-6 space-y-3">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">IATA Code *</label>
-                    <input value={newAptCode} onChange={e => setNewAptCode(e.target.value)} placeholder="e.g. DXB" maxLength={4} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500 font-mono uppercase" autoFocus />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Airport Name *</label>
-                    <input value={newAptName} onChange={e => setNewAptName(e.target.value)} placeholder="e.g. Dubai International Airport" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Country</label>
-                    <input value={newAptCountry} onChange={e => setNewAptCountry(e.target.value)} placeholder="e.g. United Arab Emirates" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500" />
+                <div className="p-4 border-b border-gray-100">
+                  <div className="relative">
+                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                      value={aptSearch}
+                      onChange={e => setAptSearch(e.target.value)}
+                      placeholder="Search by code, name, city, or country..."
+                      autoFocus
+                      className="w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500"
+                    />
                   </div>
                 </div>
-                <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-2">
-                  <button onClick={() => setShowAddAirport(false)} className="px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
-                  <button onClick={addAirport} disabled={!newAptCode.trim() || !newAptName.trim()} className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-40">Add Airport</button>
+                <div className="max-h-80 overflow-y-auto">
+                  {aptSearch.length < 2 ? (
+                    <p className="text-sm text-gray-400 text-center py-8">Type at least 2 characters to search</p>
+                  ) : aptSearchResults.length === 0 ? (
+                    <p className="text-sm text-gray-400 text-center py-8">No airports match "{aptSearch}"</p>
+                  ) : (
+                    aptSearchResults.map(ga => (
+                      <button
+                        key={ga.id}
+                        onClick={() => addAirportFromGlobal(ga)}
+                        className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-blue-50 transition-colors border-b border-gray-50"
+                      >
+                        <div className="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center shrink-0">
+                          <span className="text-xs font-bold text-blue-700 font-mono">{ga.iata_code}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">{ga.name}</p>
+                          <p className="text-xs text-gray-500 truncate">{ga.city}{ga.city && ga.country_name ? ", " : ""}{ga.country_name}</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-[9px] text-gray-400 font-mono">{ga.latitude?.toFixed(2)}, {ga.longitude?.toFixed(2)}</p>
+                          {ga.airport_type && <p className="text-[9px] text-gray-400 capitalize">{ga.airport_type}</p>}
+                        </div>
+                        <Plus size={14} className="text-blue-500 shrink-0" />
+                      </button>
+                    ))
+                  )}
                 </div>
               </div>
             </div>
