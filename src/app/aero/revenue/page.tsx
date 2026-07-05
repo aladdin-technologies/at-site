@@ -10,7 +10,7 @@ import {
 interface Airport { id: string; code: string; name: string; country: string | null; }
 interface Airline { id: string; code: string; name: string; }
 interface Driver { id: string; name: string; unit: string; description: string | null; }
-interface ChargeType { id: string; name: string; description: string | null; driver_id: string | null; }
+interface ChargeType { id: string; name: string; description: string | null; driver_id: string | null; applicable_airports: string[] | null; }
 interface ChargeRate {
   id: string; airport_id: string; airline_id: string | null;
   charge_type_id: string; driver_id: string; yield_rate: number; currency: string;
@@ -46,10 +46,13 @@ export default function RevenueLinesPage() {
   const [newDriverUnit, setNewDriverUnit] = useState("units");
   const [newDriverDesc, setNewDriverDesc] = useState("");
 
-  const [showAddLine, setShowAddLine] = useState(false);
+  const [showLineModal, setShowLineModal] = useState(false);
+  const [lineModalMode, setLineModalMode] = useState<"add" | "edit">("add");
+  const [lineModalId, setLineModalId] = useState<string | null>(null);
   const [newLineName, setNewLineName] = useState("");
   const [newLineDesc, setNewLineDesc] = useState("");
   const [newLineDriverId, setNewLineDriverId] = useState("");
+  const [newLineAirports, setNewLineAirports] = useState<Set<string>>(new Set());
 
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -67,7 +70,7 @@ export default function RevenueLinesPage() {
       supabase.from("forecast_airports").select("id, code, name, country").order("code"),
       supabase.from("forecast_airlines").select("id, code, name").order("code"),
       supabase.from("forecast_drivers").select("*").order("name"),
-      supabase.from("forecast_charge_types").select("id, name, description, driver_id").order("sort_order"),
+      supabase.from("forecast_charge_types").select("id, name, description, driver_id, applicable_airports").order("sort_order"),
       supabase.from("forecast_charge_rates").select("id, airport_id, airline_id, charge_type_id, driver_id, yield_rate, currency"),
     ]);
     setAirports((aRes.data ?? []) as Airport[]);
@@ -129,15 +132,36 @@ export default function RevenueLinesPage() {
     setEditingId(null); loadAll();
   }
 
-  async function addRevenueLine() {
+  function openAddLineModal() {
+    setLineModalMode("add"); setLineModalId(null);
+    setNewLineName(""); setNewLineDesc(""); setNewLineDriverId("");
+    setNewLineAirports(new Set());
+    setShowLineModal(true);
+  }
+  function openEditLineModal(ct: ChargeType) {
+    setLineModalMode("edit"); setLineModalId(ct.id);
+    setNewLineName(ct.name); setNewLineDesc(ct.description || ""); setNewLineDriverId(ct.driver_id || "");
+    setNewLineAirports(new Set(ct.applicable_airports || []));
+    setShowLineModal(true);
+  }
+  async function saveRevenueLine() {
     if (!newLineName.trim()) return;
-    await supabase.from("forecast_charge_types").insert({ company_id: companyId, name: newLineName.trim(), description: newLineDesc.trim() || null, driver_id: newLineDriverId || null, sort_order: chargeTypes.length });
-    setShowAddLine(false); setNewLineName(""); setNewLineDesc(""); setNewLineDriverId(""); loadAll();
+    const data = {
+      name: newLineName.trim(),
+      description: newLineDesc.trim() || null,
+      driver_id: newLineDriverId || null,
+      applicable_airports: [...newLineAirports],
+    };
+    if (lineModalMode === "edit" && lineModalId) {
+      await supabase.from("forecast_charge_types").update(data).eq("id", lineModalId);
+    } else {
+      await supabase.from("forecast_charge_types").insert({ ...data, company_id: companyId, sort_order: chargeTypes.length });
+    }
+    setShowLineModal(false); loadAll();
   }
   async function deleteRevenueLine(id: string) { await supabase.from("forecast_charge_types").delete().eq("id", id); loadAll(); }
-  async function updateRevenueLine(id: string) {
-    await supabase.from("forecast_charge_types").update({ name: editFields.name, description: editFields.desc || null, driver_id: editFields.driver_id || null }).eq("id", id);
-    setEditingId(null); loadAll();
+  function toggleLineAirport(aptId: string) {
+    setNewLineAirports(prev => { const n = new Set(prev); n.has(aptId) ? n.delete(aptId) : n.add(aptId); return n; });
   }
 
   function startEdit(id: string, fields: Record<string, string>) {
@@ -549,67 +573,47 @@ export default function RevenueLinesPage() {
       {tab === "lines" && (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-gray-500">{chargeTypes.length} revenue line{chargeTypes.length !== 1 ? "s" : ""} — these connect to charge formulas in the Charges tab</p>
-            <button onClick={() => setShowAddLine(true)} className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors">
+            <p className="text-sm text-gray-500">{chargeTypes.length} revenue line{chargeTypes.length !== 1 ? "s" : ""}</p>
+            <button onClick={openAddLineModal} className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors">
               <Plus size={16} /> Add Revenue Line
             </button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {chargeTypes.map(ct => {
               const rateCount = rates.filter(r => r.charge_type_id === ct.id).length;
-              const isEd = editingId === ct.id;
+              const aptCount = (ct.applicable_airports || []).length;
               return (
-                <div key={ct.id} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:border-blue-200 transition-colors group">
+                <div key={ct.id} onClick={() => openEditLineModal(ct)} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:border-blue-200 hover:shadow-md transition-all cursor-pointer group">
                   <div className="flex items-start justify-between mb-2">
                     <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
                       <Tag size={14} className="text-blue-500" />
                     </div>
-                    <div className="flex items-center gap-1">
-                      {isEd ? (
-                        <>
-                          <button onClick={() => updateRevenueLine(ct.id)} className="text-emerald-500 hover:text-emerald-700 text-[10px] font-medium">Save</button>
-                          <button onClick={() => setEditingId(null)} className="text-gray-400 hover:text-gray-600 text-[10px]">Cancel</button>
-                        </>
-                      ) : (
-                        <>
-                          <button onClick={() => startEdit(ct.id, { name: ct.name, desc: ct.description || "", driver_id: ct.driver_id || "" })} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-blue-500 transition-all text-[10px] font-medium">Edit</button>
-                          <button onClick={() => deleteRevenueLine(ct.id)} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-all"><Trash2 size={13} /></button>
-                        </>
-                      )}
-                    </div>
+                    <button onClick={e => { e.stopPropagation(); deleteRevenueLine(ct.id); }} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-all"><Trash2 size={13} /></button>
                   </div>
-                  {isEd ? (
-                    <div className="space-y-2">
-                      <input value={editFields.name || ""} onChange={e => setEditFields(p => ({ ...p, name: e.target.value }))} onKeyDown={e => e.key === "Enter" && updateRevenueLine(ct.id)} className="w-full px-2 py-1 rounded border border-blue-400 text-sm text-gray-900 font-semibold outline-none" autoFocus />
-                      <select value={editFields.driver_id || ""} onChange={e => setEditFields(p => ({ ...p, driver_id: e.target.value }))} className="w-full px-2 py-1 rounded border border-gray-200 text-xs text-gray-900 outline-none">
-                        <option value="">No driver</option>
-                        {drivers.map(d => <option key={d.id} value={d.id}>{d.name} ({d.unit})</option>)}
-                      </select>
-                      <input value={editFields.desc || ""} onChange={e => setEditFields(p => ({ ...p, desc: e.target.value }))} onKeyDown={e => e.key === "Enter" && updateRevenueLine(ct.id)} placeholder="Description" className="w-full px-2 py-1 rounded border border-gray-200 text-xs text-gray-900 outline-none" />
-                    </div>
-                  ) : (
-                    <>
-                      <h3 className="font-semibold text-gray-900 text-sm">{ct.name}</h3>
-                      {ct.driver_id && driverMap[ct.driver_id] && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 font-medium inline-block mt-1">{driverMap[ct.driver_id].name}</span>
-                      )}
-                      {ct.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{ct.description}</p>}
-                    </>
+                  <h3 className="font-semibold text-gray-900 text-sm">{ct.name}</h3>
+                  {ct.driver_id && driverMap[ct.driver_id] && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 font-medium inline-block mt-1">{driverMap[ct.driver_id].name}</span>
                   )}
-                  <p className="text-[10px] text-gray-400 font-mono mt-2">{rateCount} charge entr{rateCount !== 1 ? "ies" : "y"}</p>
+                  {ct.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{ct.description}</p>}
+                  <div className="flex items-center gap-2 mt-2">
+                    <p className="text-[10px] text-gray-400 font-mono">{rateCount} charge{rateCount !== 1 ? "s" : ""}</p>
+                    {aptCount > 0 && <p className="text-[10px] text-blue-500 font-mono">{aptCount} airport{aptCount !== 1 ? "s" : ""}</p>}
+                    {aptCount === 0 && <p className="text-[10px] text-gray-400 font-mono">All airports</p>}
+                  </div>
                 </div>
               );
             })}
           </div>
 
-          {showAddLine && (
-            <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4" onClick={() => setShowAddLine(false)}>
-              <div className="bg-white rounded-xl border border-gray-200 shadow-xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
+          {/* Add/Edit Revenue Line Modal */}
+          {showLineModal && (
+            <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4" onClick={() => setShowLineModal(false)}>
+              <div className="bg-white rounded-xl border border-gray-200 shadow-xl w-full max-w-md" onClick={e => e.stopPropagation()}>
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                  <h2 className="text-sm font-bold text-gray-900">Add Revenue Line</h2>
-                  <button onClick={() => setShowAddLine(false)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+                  <h2 className="text-sm font-bold text-gray-900">{lineModalMode === "edit" ? "Edit Revenue Line" : "Add Revenue Line"}</h2>
+                  <button onClick={() => setShowLineModal(false)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
                 </div>
-                <div className="p-6 space-y-3">
+                <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
                   <div>
                     <label className="block text-xs font-medium text-gray-600 mb-1">Revenue Line Name *</label>
                     <input value={newLineName} onChange={e => setNewLineName(e.target.value)} placeholder="e.g. Landing Charges" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500" autoFocus />
@@ -626,10 +630,30 @@ export default function RevenueLinesPage() {
                     <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
                     <input value={newLineDesc} onChange={e => setNewLineDesc(e.target.value)} placeholder="Optional" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500" />
                   </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-2">Applicable Airports</label>
+                    <p className="text-[10px] text-gray-400 mb-2">{newLineAirports.size === 0 ? "Applies to all airports (none selected = all)" : `Applies to ${newLineAirports.size} airport${newLineAirports.size !== 1 ? "s" : ""}`}</p>
+                    <div className="border border-gray-200 rounded-lg divide-y divide-gray-50 max-h-40 overflow-y-auto">
+                      {airports.map(apt => (
+                        <label key={apt.id} className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={newLineAirports.has(apt.id)}
+                            onChange={() => toggleLineAirport(apt.id)}
+                            className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-xs font-mono font-bold text-gray-900">{apt.code}</span>
+                          <span className="text-xs text-gray-500 flex-1 truncate">{apt.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
                 </div>
                 <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-2">
-                  <button onClick={() => setShowAddLine(false)} className="px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
-                  <button onClick={addRevenueLine} disabled={!newLineName.trim()} className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-40">Add</button>
+                  <button onClick={() => setShowLineModal(false)} className="px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
+                  <button onClick={saveRevenueLine} disabled={!newLineName.trim()} className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-40">
+                    {lineModalMode === "edit" ? "Save Changes" : "Add"}
+                  </button>
                 </div>
               </div>
             </div>
