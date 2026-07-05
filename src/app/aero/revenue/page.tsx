@@ -7,8 +7,8 @@ import {
   Building2, Plane, Tag, Network, Search, Gauge,
 } from "lucide-react";
 
-interface Airport { id: string; code: string; name: string; country: string | null; city: string | null; latitude: number | null; longitude: number | null; airport_type: string | null; }
-interface GlobalAirport { id: string; iata_code: string; name: string; country_name: string; city: string; latitude: number; longitude: number; airport_type: string; }
+interface Airport { id: string; code: string; name: string; country: string | null; city: string | null; latitude: number | null; longitude: number | null; airport_type: string | null; icao_code: string | null; }
+interface GlobalAirport { id: string; iata_code: string; icao_code: string; name: string; country_name: string; city: string; latitude: number; longitude: number; airport_type: string; }
 interface Airline { id: string; code: string; name: string; applicable_airports: string[] | null; }
 interface Driver { id: string; name: string; unit: string; description: string | null; }
 interface ChargeType { id: string; name: string; description: string | null; driver_id: string | null; applicable_airports: string[] | null; }
@@ -32,11 +32,10 @@ export default function RevenueLinesPage() {
   const [expandedAirports, setExpandedAirports] = useState<Set<string>>(new Set());
   const [expandedAirlines, setExpandedAirlines] = useState<Set<string>>(new Set());
 
-  // Global airports for search
-  const [globalAirports, setGlobalAirports] = useState<GlobalAirport[]>([]);
   const [showAddAirport, setShowAddAirport] = useState(false);
   const [aptSearch, setAptSearch] = useState("");
   const [aptSearchResults, setAptSearchResults] = useState<GlobalAirport[]>([]);
+  const [aptSearching, setAptSearching] = useState(false);
 
   const [showAirlineModal, setShowAirlineModal] = useState(false);
   const [airlineModalMode, setAirlineModalMode] = useState<"add" | "edit">("add");
@@ -70,16 +69,14 @@ export default function RevenueLinesPage() {
     const compRes = await supabase.from("forecast_companies").select("id").limit(1);
     const cid = compRes.data?.[0]?.id;
     if (cid) setCompanyId(cid);
-    const [aRes, alRes, dRes, ctRes, rRes, gRes] = await Promise.all([
-      supabase.from("forecast_airports").select("id, code, name, country, city, latitude, longitude, airport_type").order("code"),
+    const [aRes, alRes, dRes, ctRes, rRes] = await Promise.all([
+      supabase.from("forecast_airports").select("id, code, name, country, city, latitude, longitude, airport_type, icao_code").order("code"),
       supabase.from("forecast_airlines").select("id, code, name, applicable_airports").order("code"),
       supabase.from("forecast_drivers").select("*").order("name"),
       supabase.from("forecast_charge_types").select("id, name, description, driver_id, applicable_airports").order("sort_order"),
       supabase.from("forecast_charge_rates").select("id, airport_id, airline_id, charge_type_id, driver_id, yield_rate, currency"),
-      supabase.from("airports").select("id, iata_code, name, country_name, city, latitude, longitude, airport_type").not("iata_code", "is", null).not("iata_code", "eq", "").order("iata_code").limit(5000),
     ]);
     setAirports((aRes.data ?? []) as Airport[]);
-    setGlobalAirports((gRes.data ?? []) as unknown as GlobalAirport[]);
     setAirlines((alRes.data ?? []) as Airline[]);
     setDrivers((dRes.data ?? []) as Driver[]);
     setChargeTypes((ctRes.data ?? []) as ChargeType[]);
@@ -91,12 +88,22 @@ export default function RevenueLinesPage() {
 
   useEffect(() => {
     if (!aptSearch || aptSearch.length < 2) { setAptSearchResults([]); return; }
-    const q = aptSearch.toLowerCase();
-    setAptSearchResults(globalAirports.filter(ga =>
-      !existingCodes.has(ga.iata_code) &&
-      (ga.iata_code?.toLowerCase().includes(q) || ga.name?.toLowerCase().includes(q) || ga.city?.toLowerCase().includes(q) || ga.country_name?.toLowerCase().includes(q))
-    ).slice(0, 20));
-  }, [aptSearch, globalAirports, existingCodes]);
+    setAptSearching(true);
+    const timer = setTimeout(async () => {
+      const q = aptSearch.trim();
+      const { data } = await supabase
+        .from("airports")
+        .select("id, iata_code, icao_code, name, country_name, city, latitude, longitude, airport_type")
+        .or(`iata_code.ilike.%${q}%,name.ilike.%${q}%,city.ilike.%${q}%,country_name.ilike.%${q}%,icao_code.ilike.%${q}%`)
+        .not("iata_code", "is", null)
+        .not("iata_code", "eq", "")
+        .order("name")
+        .limit(30);
+      setAptSearchResults(((data ?? []) as unknown as GlobalAirport[]).filter(ga => !existingCodes.has(ga.iata_code)));
+      setAptSearching(false);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [aptSearch, existingCodes]);
 
   const chargeMap = useMemo(() => Object.fromEntries(chargeTypes.map(c => [c.id, c])), [chargeTypes]);
   const airlineMap = useMemo(() => Object.fromEntries(airlines.map(a => [a.id, a])), [airlines]);
@@ -122,7 +129,8 @@ export default function RevenueLinesPage() {
     await supabase.from("forecast_airports").insert({
       company_id: companyId, code: ga.iata_code, name: ga.name,
       country: ga.country_name, city: ga.city,
-      latitude: ga.latitude, longitude: ga.longitude, airport_type: ga.airport_type,
+      latitude: ga.latitude, longitude: ga.longitude,
+      airport_type: ga.airport_type, icao_code: ga.icao_code,
     });
     setShowAddAirport(false); setAptSearch(""); loadAll();
   }
@@ -313,43 +321,86 @@ export default function RevenueLinesPage() {
           </div>
 
           {/* Airport cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-4">
             {airports.map(apt => (
-              <div key={apt.id} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:border-blue-200 transition-colors group relative">
-                <button onClick={() => deleteAirport(apt.id)} className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-all"><Trash2 size={13} /></button>
-                <div className="flex items-start gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
-                    <Building2 size={18} className="text-blue-500" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-gray-900 text-lg font-mono leading-tight">{apt.code}</p>
-                    <p className="text-sm text-gray-700">{apt.name}</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                  {apt.country && (
-                    <div><span className="text-gray-400">Country</span><p className="text-gray-700 font-medium">{apt.country}</p></div>
-                  )}
-                  {apt.city && (
-                    <div><span className="text-gray-400">City</span><p className="text-gray-700 font-medium">{apt.city}</p></div>
-                  )}
+              <div key={apt.id} className="bg-white rounded-xl border border-gray-200 shadow-sm hover:border-blue-200 transition-colors group overflow-hidden">
+                <div className="flex">
+                  {/* Map */}
                   {apt.latitude && apt.longitude && (
-                    <div><span className="text-gray-400">Coordinates</span><p className="text-gray-600 font-mono text-[10px]">{apt.latitude.toFixed(4)}, {apt.longitude.toFixed(4)}</p></div>
+                    <div className="w-48 shrink-0 hidden sm:block">
+                      <img
+                        src={`https://maps.googleapis.com/maps/api/staticmap?center=${apt.latitude},${apt.longitude}&zoom=13&size=400x300&maptype=satellite&key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8`}
+                        alt={apt.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => { (e.target as HTMLImageElement).parentElement!.style.display = "none"; }}
+                      />
+                    </div>
                   )}
-                  {apt.airport_type && (
-                    <div><span className="text-gray-400">Type</span><p className="text-gray-700 font-medium capitalize">{apt.airport_type}</p></div>
-                  )}
-                </div>
-                {apt.latitude && apt.longitude && (
-                  <div className="mt-3 rounded-lg overflow-hidden border border-gray-100 h-24">
-                    <img
-                      src={`https://maps.googleapis.com/maps/api/staticmap?center=${apt.latitude},${apt.longitude}&zoom=12&size=400x120&maptype=satellite&key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8`}
-                      alt={apt.name}
-                      className="w-full h-full object-cover"
-                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                    />
+                  {/* Info */}
+                  <div className="flex-1 p-5">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+                          <Building2 size={18} className="text-blue-500" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-gray-900 text-lg font-mono leading-tight">{apt.code}</p>
+                          <p className="text-sm text-gray-600">{apt.name}</p>
+                        </div>
+                      </div>
+                      <button onClick={() => deleteAirport(apt.id)} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-all"><Trash2 size={14} /></button>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {apt.code && (
+                        <div className="bg-gray-50 rounded-lg px-3 py-2">
+                          <p className="text-[10px] text-gray-400 uppercase tracking-wider">IATA</p>
+                          <p className="text-sm font-bold text-gray-900 font-mono">{apt.code}</p>
+                        </div>
+                      )}
+                      {apt.icao_code && (
+                        <div className="bg-gray-50 rounded-lg px-3 py-2">
+                          <p className="text-[10px] text-gray-400 uppercase tracking-wider">ICAO</p>
+                          <p className="text-sm font-bold text-gray-900 font-mono">{apt.icao_code}</p>
+                        </div>
+                      )}
+                      {apt.country && (
+                        <div className="bg-gray-50 rounded-lg px-3 py-2">
+                          <p className="text-[10px] text-gray-400 uppercase tracking-wider">Country</p>
+                          <p className="text-sm font-medium text-gray-700">{apt.country}</p>
+                        </div>
+                      )}
+                      {apt.city && (
+                        <div className="bg-gray-50 rounded-lg px-3 py-2">
+                          <p className="text-[10px] text-gray-400 uppercase tracking-wider">City</p>
+                          <p className="text-sm font-medium text-gray-700">{apt.city}</p>
+                        </div>
+                      )}
+                    </div>
+                    {apt.latitude && apt.longitude && (
+                      <div className="flex items-center gap-4 mt-2">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-gray-50 rounded-lg px-3 py-1.5">
+                            <span className="text-[10px] text-gray-400">LAT </span>
+                            <span className="text-xs font-mono text-gray-700">{apt.latitude.toFixed(6)}</span>
+                          </div>
+                          <div className="bg-gray-50 rounded-lg px-3 py-1.5">
+                            <span className="text-[10px] text-gray-400">LON </span>
+                            <span className="text-xs font-mono text-gray-700">{apt.longitude.toFixed(6)}</span>
+                          </div>
+                        </div>
+                        <a
+                          href={`https://www.google.com/maps/@${apt.latitude},${apt.longitude},14z`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[10px] text-blue-600 hover:underline"
+                          onClick={e => e.stopPropagation()}
+                        >
+                          Open in Maps ↗
+                        </a>
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
             ))}
           </div>
@@ -361,7 +412,7 @@ export default function RevenueLinesPage() {
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                   <div>
                     <h2 className="text-sm font-bold text-gray-900">Add Airport</h2>
-                    <p className="text-xs text-gray-500 mt-0.5">Search from {globalAirports.length.toLocaleString()} airports worldwide</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Search from 4,000+ airports worldwide</p>
                   </div>
                   <button onClick={() => setShowAddAirport(false)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
                 </div>
@@ -379,7 +430,9 @@ export default function RevenueLinesPage() {
                 </div>
                 <div className="max-h-80 overflow-y-auto">
                   {aptSearch.length < 2 ? (
-                    <p className="text-sm text-gray-400 text-center py-8">Type at least 2 characters to search</p>
+                    <p className="text-sm text-gray-400 text-center py-8">Type airport code, name, city, or country</p>
+                  ) : aptSearching ? (
+                    <div className="flex items-center justify-center py-8"><div className="w-5 h-5 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" /></div>
                   ) : aptSearchResults.length === 0 ? (
                     <p className="text-sm text-gray-400 text-center py-8">No airports match "{aptSearch}"</p>
                   ) : (
@@ -389,7 +442,7 @@ export default function RevenueLinesPage() {
                         onClick={() => addAirportFromGlobal(ga)}
                         className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-blue-50 transition-colors border-b border-gray-50"
                       >
-                        <div className="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center shrink-0">
+                        <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
                           <span className="text-xs font-bold text-blue-700 font-mono">{ga.iata_code}</span>
                         </div>
                         <div className="flex-1 min-w-0">
@@ -397,8 +450,8 @@ export default function RevenueLinesPage() {
                           <p className="text-xs text-gray-500 truncate">{ga.city}{ga.city && ga.country_name ? ", " : ""}{ga.country_name}</p>
                         </div>
                         <div className="text-right shrink-0">
+                          {ga.icao_code && <p className="text-[9px] text-gray-500 font-mono font-bold">{ga.icao_code}</p>}
                           <p className="text-[9px] text-gray-400 font-mono">{ga.latitude?.toFixed(2)}, {ga.longitude?.toFixed(2)}</p>
-                          {ga.airport_type && <p className="text-[9px] text-gray-400 capitalize">{ga.airport_type}</p>}
                         </div>
                         <Plus size={14} className="text-blue-500 shrink-0" />
                       </button>
