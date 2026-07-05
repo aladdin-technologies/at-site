@@ -131,7 +131,8 @@ export default function SettingsPage() {
 
   function deleteCategory(catId: string) {
     if (catId === "admin") return;
-    setTeamMembers(prev => prev.map(m => m.categoryId === catId ? { ...m, categoryId: "viewer" } : m));
+    const assignedCount = teamMembers.filter(m => m.categoryId === catId).length;
+    if (assignedCount > 0) return;
     setCategories(prev => prev.filter(c => c.id !== catId));
   }
 
@@ -381,12 +382,19 @@ export default function SettingsPage() {
                       </button>
                     )}
                     {!isAdmin && (
-                      <button
-                        onClick={e => { e.stopPropagation(); deleteCategory(cat.id); }}
-                        className="text-gray-300 hover:text-red-500 opacity-0 group-hover/card:opacity-100 transition-all"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                      memberCount > 0 ? (
+                        <span className="text-[9px] text-gray-400 opacity-0 group-hover/card:opacity-100 transition-all" title={`Cannot delete — ${memberCount} member${memberCount !== 1 ? "s" : ""} assigned`}>
+                          <Lock size={12} className="inline text-gray-300" />
+                        </span>
+                      ) : (
+                        <button
+                          onClick={e => { e.stopPropagation(); deleteCategory(cat.id); }}
+                          className="text-gray-300 hover:text-red-500 opacity-0 group-hover/card:opacity-100 transition-all"
+                          title="Delete this access rights category"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )
                     )}
                     {isAdmin && <span className="text-[9px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-semibold">SYSTEM</span>}
                     <ChevronDown size={16} className={`text-gray-400 transition-transform ${isEditing ? "rotate-180" : ""}`} />
@@ -430,8 +438,11 @@ export default function SettingsPage() {
                         <Eye size={10} className="inline mr-0.5" /> View Only = read-only &nbsp;
                         <Shield size={10} className="inline mr-0.5" /> Full Access = read + write
                       </p>
-                      {!isAdmin && (
-                        <button onClick={() => deleteCategory(cat.id)} className="text-[10px] text-red-500 hover:underline">Delete Category</button>
+                      {!isAdmin && memberCount === 0 && (
+                        <button onClick={() => deleteCategory(cat.id)} className="text-[10px] text-red-500 hover:underline">Delete</button>
+                      )}
+                      {!isAdmin && memberCount > 0 && (
+                        <span className="text-[10px] text-gray-400">Cannot delete — {memberCount} member{memberCount !== 1 ? "s" : ""} assigned. Reassign them first.</span>
                       )}
                     </div>
                   </div>
