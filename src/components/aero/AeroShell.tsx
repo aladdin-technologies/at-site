@@ -31,8 +31,9 @@ const NAV_ITEMS: { label: string; href: string; icon: any; permKey: keyof TabPer
   { label: "Historicals", href: "/aero/historicals", icon: History, permKey: "historicals" },
   { label: "Budget", href: "/aero/budget", icon: Target, permKey: "budget" },
   { label: "Scenarios", href: "/aero/scenarios", icon: TrendingUp, permKey: "scenarios" },
-  { label: "Charges", href: "/aero/charges", icon: Receipt, permKey: "charges" },
+  { label: "Yield & Charges", href: "/aero/charges", icon: Receipt, permKey: "charges" },
   { label: "Revenue Lines", href: "/aero/revenue", icon: DollarSign, permKey: "revenue" },
+  { label: "Benchmarking", href: "/aero/benchmarking", icon: BarChart3, permKey: "analytics" },
   { label: "Settings", href: "/aero/settings", icon: Settings, permKey: "settings" },
 ];
 
