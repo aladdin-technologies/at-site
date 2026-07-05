@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 
 interface Airport { id: string; code: string; name: string; country: string | null; }
-interface Airline { id: string; code: string; name: string; }
+interface Airline { id: string; code: string; name: string; applicable_airports: string[] | null; }
 interface Driver { id: string; name: string; unit: string; description: string | null; }
 interface ChargeType { id: string; name: string; description: string | null; driver_id: string | null; applicable_airports: string[] | null; }
 interface ChargeRate {
@@ -37,9 +37,12 @@ export default function RevenueLinesPage() {
   const [newAptName, setNewAptName] = useState("");
   const [newAptCountry, setNewAptCountry] = useState("");
 
-  const [showAddAirline, setShowAddAirline] = useState(false);
+  const [showAirlineModal, setShowAirlineModal] = useState(false);
+  const [airlineModalMode, setAirlineModalMode] = useState<"add" | "edit">("add");
+  const [airlineModalId, setAirlineModalId] = useState<string | null>(null);
   const [newAlCode, setNewAlCode] = useState("");
   const [newAlName, setNewAlName] = useState("");
+  const [newAlAirports, setNewAlAirports] = useState<Set<string>>(new Set());
 
   const [showAddDriver, setShowAddDriver] = useState(false);
   const [newDriverName, setNewDriverName] = useState("");
@@ -68,7 +71,7 @@ export default function RevenueLinesPage() {
     if (cid) setCompanyId(cid);
     const [aRes, alRes, dRes, ctRes, rRes] = await Promise.all([
       supabase.from("forecast_airports").select("id, code, name, country").order("code"),
-      supabase.from("forecast_airlines").select("id, code, name").order("code"),
+      supabase.from("forecast_airlines").select("id, code, name, applicable_airports").order("code"),
       supabase.from("forecast_drivers").select("*").order("name"),
       supabase.from("forecast_charge_types").select("id, name, description, driver_id, applicable_airports").order("sort_order"),
       supabase.from("forecast_charge_rates").select("id, airport_id, airline_id, charge_type_id, driver_id, yield_rate, currency"),
@@ -110,15 +113,30 @@ export default function RevenueLinesPage() {
     setEditingId(null); loadAll();
   }
 
-  async function addAirline() {
+  function openAddAirlineModal() {
+    setAirlineModalMode("add"); setAirlineModalId(null);
+    setNewAlCode(""); setNewAlName(""); setNewAlAirports(new Set());
+    setShowAirlineModal(true);
+  }
+  function openEditAirlineModal(al: Airline) {
+    setAirlineModalMode("edit"); setAirlineModalId(al.id);
+    setNewAlCode(al.code); setNewAlName(al.name);
+    setNewAlAirports(new Set(al.applicable_airports || []));
+    setShowAirlineModal(true);
+  }
+  async function saveAirline() {
     if (!newAlCode.trim() || !newAlName.trim()) return;
-    await supabase.from("forecast_airlines").insert({ company_id: companyId, code: newAlCode.trim().toUpperCase(), name: newAlName.trim() });
-    setShowAddAirline(false); setNewAlCode(""); setNewAlName(""); loadAll();
+    const data = { code: newAlCode.trim().toUpperCase(), name: newAlName.trim(), applicable_airports: [...newAlAirports] };
+    if (airlineModalMode === "edit" && airlineModalId) {
+      await supabase.from("forecast_airlines").update(data).eq("id", airlineModalId);
+    } else {
+      await supabase.from("forecast_airlines").insert({ ...data, company_id: companyId });
+    }
+    setShowAirlineModal(false); loadAll();
   }
   async function deleteAirline(id: string) { await supabase.from("forecast_airlines").delete().eq("id", id); loadAll(); }
-  async function updateAirline(id: string) {
-    await supabase.from("forecast_airlines").update({ code: editFields.code?.toUpperCase(), name: editFields.name }).eq("id", id);
-    setEditingId(null); loadAll();
+  function toggleAlAirport(aptId: string) {
+    setNewAlAirports(prev => { const n = new Set(prev); n.has(aptId) ? n.delete(aptId) : n.add(aptId); return n; });
   }
 
   async function addDriver() {
@@ -224,7 +242,14 @@ export default function RevenueLinesPage() {
               }).map(apt => {
                 const aptRates = ratesByAirport[apt.id] || [];
                 const isExpanded = expandedAirports.has(apt.id);
-                const airlineIds = [...new Set(aptRates.map(r => r.airline_id).filter(Boolean))] as string[];
+                const airlinesAtAirport = airlines.filter(al => {
+                  const alApts = al.applicable_airports || [];
+                  return alApts.length === 0 || alApts.includes(apt.id);
+                });
+                const airlineIds = [...new Set([
+                  ...aptRates.map(r => r.airline_id).filter(Boolean) as string[],
+                  ...airlinesAtAirport.map(a => a.id),
+                ])];
                 const globalRates = aptRates.filter(r => !r.airline_id);
 
                 return (
@@ -238,7 +263,7 @@ export default function RevenueLinesPage() {
                         <span className="font-bold text-gray-900 text-sm">{apt.code}</span>
                         <span className="text-sm text-gray-500 ml-2">{apt.name}</span>
                       </div>
-                      <span className="text-[10px] text-gray-400 font-mono mr-2">{aptRates.length} charge{aptRates.length !== 1 ? "s" : ""} · {airlineIds.length} airline{airlineIds.length !== 1 ? "s" : ""}</span>
+                      <span className="text-[10px] text-gray-400 font-mono mr-2">{aptRates.length} charge{aptRates.length !== 1 ? "s" : ""} · {airlinesAtAirport.length} airline{airlinesAtAirport.length !== 1 ? "s" : ""}</span>
                       {isExpanded ? <ChevronDown size={16} className="text-gray-400" /> : <ChevronRight size={16} className="text-gray-400" />}
                     </div>
 
@@ -397,7 +422,7 @@ export default function RevenueLinesPage() {
         <div>
           <div className="flex items-center justify-between mb-4">
             <p className="text-sm text-gray-500">{airlines.length} airline{airlines.length !== 1 ? "s" : ""} configured</p>
-            <button onClick={() => setShowAddAirline(true)} className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors">
+            <button onClick={openAddAirlineModal} className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors">
               <Plus size={16} /> Add Airline
             </button>
           </div>
@@ -407,38 +432,29 @@ export default function RevenueLinesPage() {
                 <tr className="bg-gray-50/80 border-b border-gray-100">
                   <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Code</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Airline Name</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Charge Entries</th>
-                  <th className="w-10"></th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Airports</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Charges</th>
                 </tr>
               </thead>
               <tbody>
                 {airlines.map(al => {
                   const entryCount = rates.filter(r => r.airline_id === al.id).length;
-                  const isEd = editingId === al.id;
+                  const alApts = al.applicable_airports || [];
                   return (
-                    <tr key={al.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors group">
+                    <tr key={al.id} onClick={() => openEditAirlineModal(al)} className="border-b border-gray-50 hover:bg-blue-50/30 transition-colors cursor-pointer">
                       <td className="px-5 py-3">
-                        {isEd ? <input value={editFields.code || ""} onChange={e => setEditFields(p => ({ ...p, code: e.target.value }))} onKeyDown={e => e.key === "Enter" && updateAirline(al.id)} className="w-16 px-2 py-1 rounded border border-blue-400 text-sm text-gray-900 font-mono uppercase outline-none" autoFocus /> : <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded font-mono">{al.code}</span>}
+                        <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded font-mono">{al.code}</span>
                       </td>
+                      <td className="px-4 py-3 text-gray-700 font-medium">{al.name}</td>
                       <td className="px-4 py-3">
-                        {isEd ? <input value={editFields.name || ""} onChange={e => setEditFields(p => ({ ...p, name: e.target.value }))} onKeyDown={e => e.key === "Enter" && updateAirline(al.id)} className="w-full px-2 py-1 rounded border border-blue-400 text-sm text-gray-900 outline-none" /> : <span className="text-gray-700">{al.name}</span>}
-                      </td>
-                      <td className="px-4 py-3 text-right font-mono text-gray-500 text-xs">{entryCount}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1">
-                          {isEd ? (
-                            <>
-                              <button onClick={() => updateAirline(al.id)} className="text-emerald-500 hover:text-emerald-700 text-[10px] font-medium">Save</button>
-                              <button onClick={() => setEditingId(null)} className="text-gray-400 hover:text-gray-600 text-[10px]">Cancel</button>
-                            </>
-                          ) : (
-                            <>
-                              <button onClick={() => startEdit(al.id, { code: al.code, name: al.name })} className="text-gray-300 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-all text-[10px] font-medium">Edit</button>
-                              <button onClick={() => deleteAirline(al.id)} className="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"><Trash2 size={14} /></button>
-                            </>
-                          )}
+                        <div className="flex flex-wrap gap-1">
+                          {alApts.length > 0 ? alApts.map(aId => {
+                            const a = airports.find(x => x.id === aId);
+                            return a ? <span key={aId} className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700">{a.code}</span> : null;
+                          }) : <span className="text-[9px] text-gray-400 italic">All airports</span>}
                         </div>
                       </td>
+                      <td className="px-4 py-3 text-right font-mono text-gray-500 text-xs">{entryCount}</td>
                     </tr>
                   );
                 })}
@@ -446,26 +462,47 @@ export default function RevenueLinesPage() {
             </table>
           </div>
 
-          {showAddAirline && (
-            <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4" onClick={() => setShowAddAirline(false)}>
-              <div className="bg-white rounded-xl border border-gray-200 shadow-xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
+          {showAirlineModal && (
+            <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4" onClick={() => setShowAirlineModal(false)}>
+              <div className="bg-white rounded-xl border border-gray-200 shadow-xl w-full max-w-md" onClick={e => e.stopPropagation()}>
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                  <h2 className="text-sm font-bold text-gray-900">Add Airline</h2>
-                  <button onClick={() => setShowAddAirline(false)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+                  <h2 className="text-sm font-bold text-gray-900">{airlineModalMode === "edit" ? "Edit Airline" : "Add Airline"}</h2>
+                  <button onClick={() => setShowAirlineModal(false)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
                 </div>
-                <div className="p-6 space-y-3">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">IATA Code *</label>
-                    <input value={newAlCode} onChange={e => setNewAlCode(e.target.value)} placeholder="e.g. EK" maxLength={3} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500 font-mono uppercase" autoFocus />
+                <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">IATA Code *</label>
+                      <input value={newAlCode} onChange={e => setNewAlCode(e.target.value)} placeholder="e.g. EK" maxLength={3} className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500 font-mono uppercase" autoFocus />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Airline Name *</label>
+                      <input value={newAlName} onChange={e => setNewAlName(e.target.value)} placeholder="e.g. Emirates" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500" />
+                    </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Airline Name *</label>
-                    <input value={newAlName} onChange={e => setNewAlName(e.target.value)} placeholder="e.g. Emirates" className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-900 outline-none focus:border-blue-500" />
+                    <label className="block text-xs font-medium text-gray-600 mb-2">Airports this airline operates at</label>
+                    <p className="text-[10px] text-gray-400 mb-2">{newAlAirports.size === 0 ? "Operates at all airports (none selected = all)" : `Operates at ${newAlAirports.size} airport${newAlAirports.size !== 1 ? "s" : ""}`}</p>
+                    <div className="border border-gray-200 rounded-lg divide-y divide-gray-50 max-h-40 overflow-y-auto">
+                      {airports.map(apt => (
+                        <label key={apt.id} className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer transition-colors">
+                          <input type="checkbox" checked={newAlAirports.has(apt.id)} onChange={() => toggleAlAirport(apt.id)} className="w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                          <span className="text-xs font-mono font-bold text-gray-900">{apt.code}</span>
+                          <span className="text-xs text-gray-500 flex-1 truncate">{apt.name}</span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
                 </div>
-                <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-2">
-                  <button onClick={() => setShowAddAirline(false)} className="px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
-                  <button onClick={addAirline} disabled={!newAlCode.trim() || !newAlName.trim()} className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-40">Add Airline</button>
+                <div className="px-6 py-4 border-t border-gray-100 flex items-center gap-2">
+                  {airlineModalMode === "edit" && airlineModalId && (
+                    <button onClick={() => { deleteAirline(airlineModalId); setShowAirlineModal(false); }} className="text-xs text-red-500 hover:text-red-700 hover:underline">Delete</button>
+                  )}
+                  <div className="flex-1" />
+                  <button onClick={() => setShowAirlineModal(false)} className="px-4 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
+                  <button onClick={saveAirline} disabled={!newAlCode.trim() || !newAlName.trim()} className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-40">
+                    {airlineModalMode === "edit" ? "Save Changes" : "Add Airline"}
+                  </button>
                 </div>
               </div>
             </div>
