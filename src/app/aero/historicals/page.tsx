@@ -46,14 +46,10 @@ export default function HistoricalsPage() {
   }, []);
 
   const dataYears = useMemo(() => {
-    const yrs = new Set(trafficData.map(t => t.year));
-    if (yrs.size === 0) return [2023, 2024, 2025];
-    const min = Math.min(...yrs);
-    const max = Math.max(...yrs);
     const result: number[] = [];
-    for (let y = min; y <= max; y++) result.push(y);
+    for (let y = 2018; y <= 2025; y++) result.push(y);
     return result;
-  }, [trafficData]);
+  }, []);
 
   const coverageMap = useMemo(() => {
     const map: Record<string, Set<string>> = {};
