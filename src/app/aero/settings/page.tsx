@@ -98,6 +98,8 @@ export default function SettingsPage() {
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [newCatName, setNewCatName] = useState("");
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
+  const [renamingCategory, setRenamingCategory] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
 
   // Team
   const [inviteEmail, setInviteEmail] = useState("");
@@ -327,7 +329,7 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm text-gray-500">Define access right categories — each category controls which tabs a user can see and edit</p>
             <button onClick={() => setShowAddCategory(true)} className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors">
-              <Plus size={16} /> New Category
+              <Plus size={16} /> New Rights
             </button>
           </div>
 
@@ -337,18 +339,55 @@ export default function SettingsPage() {
             const isAdmin = cat.id === "admin";
 
             return (
-              <div key={cat.id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              <div key={cat.id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden group/card">
                 <div className="flex items-center justify-between px-5 py-4 cursor-pointer" onClick={() => setEditingCategory(isEditing ? null : cat.id)}>
                   <div className="flex items-center gap-3">
                     <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${isAdmin ? "bg-blue-50" : "bg-gray-50"}`}>
                       <KeyRound size={16} className={isAdmin ? "text-blue-500" : "text-gray-400"} />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-gray-900">{cat.name}</p>
+                      {renamingCategory === cat.id ? (
+                        <input
+                          value={renameValue}
+                          onChange={e => setRenameValue(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === "Enter" && renameValue.trim()) {
+                              setCategories(prev => prev.map(c => c.id === cat.id ? { ...c, name: renameValue.trim() } : c));
+                              setRenamingCategory(null);
+                            }
+                            if (e.key === "Escape") setRenamingCategory(null);
+                          }}
+                          onBlur={() => {
+                            if (renameValue.trim()) setCategories(prev => prev.map(c => c.id === cat.id ? { ...c, name: renameValue.trim() } : c));
+                            setRenamingCategory(null);
+                          }}
+                          onClick={e => e.stopPropagation()}
+                          autoFocus
+                          className="text-sm font-semibold text-gray-900 px-2 py-0.5 rounded border border-blue-400 outline-none w-48"
+                        />
+                      ) : (
+                        <p className="text-sm font-semibold text-gray-900">{cat.name}</p>
+                      )}
                       <p className="text-[10px] text-gray-400">{memberCount} member{memberCount !== 1 ? "s" : ""}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    {!isAdmin && renamingCategory !== cat.id && (
+                      <button
+                        onClick={e => { e.stopPropagation(); setRenamingCategory(cat.id); setRenameValue(cat.name); }}
+                        className="text-[10px] text-gray-400 hover:text-blue-600 opacity-0 group-hover/card:opacity-100 transition-all"
+                      >
+                        Rename
+                      </button>
+                    )}
+                    {!isAdmin && (
+                      <button
+                        onClick={e => { e.stopPropagation(); deleteCategory(cat.id); }}
+                        className="text-gray-300 hover:text-red-500 opacity-0 group-hover/card:opacity-100 transition-all"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
                     {isAdmin && <span className="text-[9px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-semibold">SYSTEM</span>}
                     <ChevronDown size={16} className={`text-gray-400 transition-transform ${isEditing ? "rotate-180" : ""}`} />
                   </div>
@@ -406,7 +445,7 @@ export default function SettingsPage() {
             <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4" onClick={() => setShowAddCategory(false)}>
               <div className="bg-white rounded-xl border border-gray-200 shadow-xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
                 <div className="px-6 py-4 border-b border-gray-100">
-                  <h2 className="text-sm font-bold text-gray-900">New Access Category</h2>
+                  <h2 className="text-sm font-bold text-gray-900">New Access Rights</h2>
                 </div>
                 <div className="p-6">
                   <label className="block text-xs font-medium text-gray-600 mb-1">Category Name</label>
