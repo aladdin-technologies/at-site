@@ -583,28 +583,34 @@ export default function RevenueLinesPage() {
               const rateCount = rates.filter(r => r.charge_type_id === ct.id).length;
               const aptCount = (ct.applicable_airports || []).length;
               return (
-                <div key={ct.id} onClick={() => openEditLineModal(ct)} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:border-blue-200 hover:shadow-md transition-all cursor-pointer group relative">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-                      <Tag size={14} className="text-blue-500" />
+                <div key={ct.id} onClick={() => openEditLineModal(ct)} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:border-blue-200 hover:shadow-md transition-all cursor-pointer group">
+                  <div className="flex gap-3">
+                    {/* Left content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+                          <Tag size={14} className="text-blue-500" />
+                        </div>
+                        <button onClick={e => { e.stopPropagation(); deleteRevenueLine(ct.id); }} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-all ml-auto shrink-0"><Trash2 size={13} /></button>
+                      </div>
+                      <h3 className="font-semibold text-gray-900 text-sm">{ct.name}</h3>
+                      {ct.driver_id && driverMap[ct.driver_id] && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 font-medium inline-block mt-1">{driverMap[ct.driver_id].name}</span>
+                      )}
+                      {ct.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{ct.description}</p>}
+                      <p className="text-[10px] text-gray-400 font-mono mt-2">{rateCount} charge{rateCount !== 1 ? "s" : ""}</p>
                     </div>
-                    <button onClick={e => { e.stopPropagation(); deleteRevenueLine(ct.id); }} className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-all"><Trash2 size={13} /></button>
-                  </div>
-                  <h3 className="font-semibold text-gray-900 text-sm">{ct.name}</h3>
-                  {ct.driver_id && driverMap[ct.driver_id] && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 font-medium inline-block mt-1">{driverMap[ct.driver_id].name}</span>
-                  )}
-                  {ct.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{ct.description}</p>}
-                  <p className="text-[10px] text-gray-400 font-mono mt-2">{rateCount} charge{rateCount !== 1 ? "s" : ""}</p>
-                  <div className="flex flex-wrap gap-1 mt-1.5 absolute top-4 right-4">
-                    {aptCount > 0 ? (
-                      (ct.applicable_airports || []).map(aId => {
-                        const a = airports.find(x => x.id === aId);
-                        return a ? <span key={aId} className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700">{a.code}</span> : null;
-                      })
-                    ) : (
-                      <span className="text-[9px] text-gray-400">All airports</span>
-                    )}
+                    {/* Right airport codes column */}
+                    <div className="flex flex-col gap-1 items-end max-h-24 overflow-y-auto shrink-0 pt-1">
+                      {aptCount > 0 ? (
+                        (ct.applicable_airports || []).map(aId => {
+                          const a = airports.find(x => x.id === aId);
+                          return a ? <span key={aId} className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 whitespace-nowrap">{a.code}</span> : null;
+                        })
+                      ) : (
+                        <span className="text-[9px] text-gray-400 italic">All</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
