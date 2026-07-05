@@ -583,7 +583,7 @@ export default function RevenueLinesPage() {
               const rateCount = rates.filter(r => r.charge_type_id === ct.id).length;
               const aptCount = (ct.applicable_airports || []).length;
               return (
-                <div key={ct.id} onClick={() => openEditLineModal(ct)} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:border-blue-200 hover:shadow-md transition-all cursor-pointer group">
+                <div key={ct.id} onClick={() => openEditLineModal(ct)} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:border-blue-200 hover:shadow-md transition-all cursor-pointer group relative">
                   <div className="flex items-start justify-between mb-2">
                     <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
                       <Tag size={14} className="text-blue-500" />
@@ -595,10 +595,16 @@ export default function RevenueLinesPage() {
                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 font-medium inline-block mt-1">{driverMap[ct.driver_id].name}</span>
                   )}
                   {ct.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{ct.description}</p>}
-                  <div className="flex items-center gap-2 mt-2">
-                    <p className="text-[10px] text-gray-400 font-mono">{rateCount} charge{rateCount !== 1 ? "s" : ""}</p>
-                    {aptCount > 0 && <p className="text-[10px] text-blue-500 font-mono">{aptCount} airport{aptCount !== 1 ? "s" : ""}</p>}
-                    {aptCount === 0 && <p className="text-[10px] text-gray-400 font-mono">All airports</p>}
+                  <p className="text-[10px] text-gray-400 font-mono mt-2">{rateCount} charge{rateCount !== 1 ? "s" : ""}</p>
+                  <div className="flex flex-wrap gap-1 mt-1.5 absolute top-4 right-4">
+                    {aptCount > 0 ? (
+                      (ct.applicable_airports || []).map(aId => {
+                        const a = airports.find(x => x.id === aId);
+                        return a ? <span key={aId} className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700">{a.code}</span> : null;
+                      })
+                    ) : (
+                      <span className="text-[9px] text-gray-400">All airports</span>
+                    )}
                   </div>
                 </div>
               );
