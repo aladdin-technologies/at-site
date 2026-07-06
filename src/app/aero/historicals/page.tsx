@@ -10,6 +10,7 @@ interface CfgLine { id: string; name: string; applicable_airports: string[] | nu
 interface CfgDriver { id: string; name: string; unit: string; }
 
 interface DataPoint { year: number; month: number; airport_code: string; airline_code: string; }
+interface DataValue { airport_code: string; airline_code: string; metric_name: string; year: number; month: number; value: number; }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -20,6 +21,8 @@ export default function HistoricalsPage() {
   const [cfgDrivers, setCfgDrivers] = useState<CfgDriver[]>([]);
   const [trafficPoints, setTrafficPoints] = useState<DataPoint[]>([]);
   const [revenuePoints, setRevenuePoints] = useState<DataPoint[]>([]);
+  const [trafficValues, setTrafficValues] = useState<DataValue[]>([]);
+  const [revenueValues, setRevenueValues] = useState<DataValue[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState<{ type: string; count: number; error?: string } | null>(null);
@@ -33,13 +36,19 @@ export default function HistoricalsPage() {
     const cid = compRes.data?.[0]?.id;
     if (cid) setCompanyId(cid);
 
-    const [aRes, alRes, lRes, dRes, htRes, hrRes] = await Promise.all([
+    const rpcHeaders = { "Content-Type": "application/json", apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}` };
+    const rpcUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/get_coverage_summary`;
+    const dataUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/historical_data?select=airport_code,airline_code,metric_name,year,month,value&order=year,month,airport_code,airline_code`;
+
+    const [aRes, alRes, lRes, dRes, htRes, hrRes, tvRes, rvRes] = await Promise.all([
       supabase.from("forecast_airports").select("id, code, name").order("code"),
       supabase.from("forecast_airlines").select("id, code, name, applicable_airports").order("code"),
       supabase.from("forecast_charge_types").select("id, name, applicable_airports, driver_id").order("sort_order"),
       supabase.from("forecast_drivers").select("id, name, unit").order("name"),
-      fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/get_coverage_summary`, { method: "POST", headers: { "Content-Type": "application/json", apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}` }, body: JSON.stringify({ p_type: "traffic" }) }).then(r => r.json()).then(data => ({ data })).catch(() => ({ data: [] })),
-      fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/get_coverage_summary`, { method: "POST", headers: { "Content-Type": "application/json", apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}` }, body: JSON.stringify({ p_type: "revenue" }) }).then(r => r.json()).then(data => ({ data })).catch(() => ({ data: [] })),
+      fetch(rpcUrl, { method: "POST", headers: rpcHeaders, body: JSON.stringify({ p_type: "traffic" }) }).then(r => r.json()).then(data => ({ data })).catch(() => ({ data: [] })),
+      fetch(rpcUrl, { method: "POST", headers: rpcHeaders, body: JSON.stringify({ p_type: "revenue" }) }).then(r => r.json()).then(data => ({ data })).catch(() => ({ data: [] })),
+      fetch(`${dataUrl}&data_type=eq.traffic`, { headers: rpcHeaders }).then(r => r.json()).catch(() => []),
+      fetch(`${dataUrl}&data_type=eq.revenue`, { headers: rpcHeaders }).then(r => r.json()).catch(() => []),
     ]);
     setCfgAirports((aRes.data ?? []) as CfgAirport[]);
     setCfgAirlines((alRes.data ?? []) as CfgAirline[]);
@@ -48,6 +57,8 @@ export default function HistoricalsPage() {
 
     setTrafficPoints((htRes.data ?? []).map((h: any) => ({ year: h.year, month: h.month, airport_code: h.airport_code, airline_code: h.airline_code })));
     setRevenuePoints((hrRes.data ?? []).map((h: any) => ({ year: h.year, month: h.month, airport_code: h.airport_code, airline_code: h.airline_code })));
+    setTrafficValues(Array.isArray(tvRes) ? tvRes : []);
+    setRevenueValues(Array.isArray(rvRes) ? rvRes : []);
     setLoading(false);
   }
 
@@ -104,6 +115,17 @@ export default function HistoricalsPage() {
     return result;
   }, [activePoints, expectedCombos]);
 
+  function lookupValues(values: DataValue[], apt: string, al: string, metric: string) {
+    const byYear: Record<number, number[]> = {};
+    for (const v of values) {
+      if (v.airport_code === apt && v.airline_code === al && v.metric_name === metric) {
+        if (!byYear[v.year]) byYear[v.year] = new Array(12).fill(0);
+        byYear[v.year][v.month - 1] = v.value;
+      }
+    }
+    return byYear;
+  }
+
   function generateRevenueTemplate() {
     const header = ["Airport", "Airline", "Revenue Line", "Year", ...MONTHS];
     const rows = [header.join(",")];
@@ -112,7 +134,15 @@ export default function HistoricalsPage() {
       const linesAtApt = cfgLines.filter(l => { const a = l.applicable_airports || []; return a.length === 0 || a.includes(apt.id); });
       for (const al of airlinesAtApt) {
         for (const line of linesAtApt) {
-          rows.push([apt.code, al.code, `"${line.name}"`, "", ...MONTHS.map(() => "")].join(","));
+          const byYear = lookupValues(revenueValues, apt.code, al.code, line.name);
+          const years = Object.keys(byYear).map(Number).sort();
+          if (years.length > 0) {
+            for (const y of years) {
+              rows.push([apt.code, al.code, `"${line.name}"`, y, ...byYear[y].map(v => v || "")].join(","));
+            }
+          } else {
+            rows.push([apt.code, al.code, `"${line.name}"`, "", ...MONTHS.map(() => "")].join(","));
+          }
         }
       }
     }
@@ -126,11 +156,17 @@ export default function HistoricalsPage() {
     for (const apt of cfgAirports) {
       const airlinesAtApt = cfgAirlines.filter(al => { const a = al.applicable_airports || []; return a.length === 0 || a.includes(apt.id); });
       for (const al of airlinesAtApt) {
-        for (const kpi of kpiLines) {
-          rows.push([apt.code, al.code, kpi, "", ...MONTHS.map(() => "")].join(","));
-        }
-        for (const dr of cfgDrivers) {
-          rows.push([apt.code, al.code, `"${dr.name}"`, "", ...MONTHS.map(() => "")].join(","));
+        const allMetrics = [...kpiLines, ...cfgDrivers.map(d => d.name)];
+        for (const metric of allMetrics) {
+          const byYear = lookupValues(trafficValues, apt.code, al.code, metric);
+          const years = Object.keys(byYear).map(Number).sort();
+          if (years.length > 0) {
+            for (const y of years) {
+              rows.push([apt.code, al.code, `"${metric}"`, y, ...byYear[y].map(v => v || "")].join(","));
+            }
+          } else {
+            rows.push([apt.code, al.code, `"${metric}"`, "", ...MONTHS.map(() => "")].join(","));
+          }
         }
       }
     }
@@ -191,6 +227,14 @@ export default function HistoricalsPage() {
       if (rows.length === 0) {
         setUploadResult({ type: dataType, count: 0, error: "No data values found in the file. Make sure month columns have numbers." });
         setUploading(false); return;
+      }
+
+      const uniqueKeys = new Set(rows.map(r => `${r.airport_code}:${r.airline_code}:${r.metric_name}:${r.year}`));
+      for (const key of uniqueKeys) {
+        const [ac, alc, mn, yr] = key.split(":");
+        await supabase.from("historical_data").delete()
+          .eq("data_type", dataType).eq("airport_code", ac).eq("airline_code", alc)
+          .eq("metric_name", mn).eq("year", parseInt(yr));
       }
 
       const batchSize = 500;
