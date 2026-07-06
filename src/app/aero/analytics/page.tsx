@@ -253,8 +253,8 @@ export default function AnalyticsPage() {
         {/* Revenue by Line — Pie Charts per Airport */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <h2 className="text-sm font-semibold text-gray-900 mb-5">Revenue by Line</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            {["ALL", ...availableAirports].map(aptCode => {
+          {(() => {
+            const allPies = ["ALL", ...availableAirports].map(aptCode => {
               const aptRevData = aptCode === "ALL" ? revenueData : revenueData.filter(d => d.airport_code === aptCode);
               const byLine: Record<string, number> = {};
               for (const d of aptRevData) {
@@ -264,51 +264,71 @@ export default function AnalyticsPage() {
               }
               const lines = Object.entries(byLine).map(([name, rev]) => ({ name, rev })).sort((a, b) => b.rev - a.rev);
               const total = lines.reduce((s, l) => s + l.rev, 0);
-              if (total === 0) return null;
-
               let cumAngle = 0;
               const slices = lines.map((l, i) => {
-                const pct = l.rev / total;
+                const pct = total > 0 ? l.rev / total : 0;
                 const startAngle = cumAngle;
                 cumAngle += pct * 360;
                 return { ...l, pct, startAngle, endAngle: cumAngle, color: lineColors[i % lineColors.length] };
               });
+              return { aptCode, slices, total };
+            }).filter(p => p.total > 0);
 
-              function polarToCartesian(cx: number, cy: number, r: number, deg: number) {
-                const rad = (deg - 90) * Math.PI / 180;
-                return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
-              }
+            const legendSlices = allPies[0]?.slices || [];
 
-              return (
-                <div key={aptCode} className="text-center">
-                  <p className="text-xs font-bold text-gray-900 mb-3 font-mono">{aptCode === "ALL" ? "All Airports" : aptCode}</p>
-                  <svg viewBox="0 0 200 200" className="w-36 h-36 mx-auto mb-3">
-                    {slices.map((s, i) => {
-                      if (s.pct >= 0.999) {
-                        return <circle key={i} cx="100" cy="100" r="80" fill={s.color} />;
-                      }
-                      const start = polarToCartesian(100, 100, 80, s.startAngle);
-                      const end = polarToCartesian(100, 100, 80, s.endAngle);
-                      const largeArc = s.pct > 0.5 ? 1 : 0;
-                      return <path key={i} d={`M100,100 L${start.x},${start.y} A80,80 0 ${largeArc} 1 ${end.x},${end.y} Z`} fill={s.color} stroke="white" strokeWidth="1.5" />;
-                    })}
-                    <circle cx="100" cy="100" r="45" fill="white" />
-                    <text x="100" y="96" textAnchor="middle" className="text-sm font-bold fill-gray-900">{Math.round(convert(total, "USD") / 1000000).toLocaleString()}m</text>
-                    <text x="100" y="112" textAnchor="middle" className="text-[9px] fill-gray-400">Total</text>
-                  </svg>
-                  <div className="space-y-1 text-left">
-                    {slices.map((s, i) => (
-                      <div key={i} className="flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
-                        <span className="text-[10px] text-gray-600 flex-1 truncate">{s.name}</span>
-                        <span className="text-[10px] text-gray-400 font-mono">{(s.pct * 100).toFixed(0)}%</span>
-                      </div>
-                    ))}
-                  </div>
+            function polarToCartesian(cx: number, cy: number, r: number, deg: number) {
+              const rad = (deg - 90) * Math.PI / 180;
+              return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+            }
+
+            return (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-5">
+                  {allPies.map((pie, pieIdx) => (
+                    <div key={pie.aptCode} className="text-center">
+                      <p className="text-xs font-bold text-gray-900 mb-3 font-mono">{pie.aptCode === "ALL" ? "All Airports" : pie.aptCode}</p>
+                      <svg viewBox="0 0 200 200" className="w-36 h-36 mx-auto">
+                        <style>{`
+                          @keyframes pieReveal { from { stroke-dashoffset: 502; } to { stroke-dashoffset: 0; } }
+                        `}</style>
+                        {pie.slices.map((s, i) => {
+                          if (s.pct >= 0.999) {
+                            return <circle key={i} cx="100" cy="100" r="80" fill={s.color} className="animate-[pieReveal_1s_ease-out]" />;
+                          }
+                          const start = polarToCartesian(100, 100, 80, s.startAngle);
+                          const end = polarToCartesian(100, 100, 80, s.endAngle);
+                          const largeArc = s.pct > 0.5 ? 1 : 0;
+                          return (
+                            <path
+                              key={i}
+                              d={`M100,100 L${start.x},${start.y} A80,80 0 ${largeArc} 1 ${end.x},${end.y} Z`}
+                              fill={s.color}
+                              stroke="white"
+                              strokeWidth="1.5"
+                              style={{ opacity: 0, animation: `fadeIn 0.4s ease-out ${pieIdx * 0.15 + i * 0.08}s forwards` }}
+                            />
+                          );
+                        })}
+                        <circle cx="100" cy="100" r="45" fill="white" />
+                        <text x="100" y="96" textAnchor="middle" className="text-sm font-bold fill-gray-900">{Math.round(convert(pie.total, "USD") / 1000000).toLocaleString()}m</text>
+                        <text x="100" y="112" textAnchor="middle" className="text-[9px] fill-gray-400">Total</text>
+                      </svg>
+                    </div>
+                  ))}
                 </div>
-              );
-            })}
-          </div>
+                <style>{`@keyframes fadeIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }`}</style>
+                {/* Single shared legend */}
+                <div className="flex items-center justify-center gap-4 flex-wrap">
+                  {legendSlices.map((s, i) => (
+                    <div key={i} className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
+                      <span className="text-[11px] text-gray-600">{s.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            );
+          })()}
         </div>
 
         {/* YoY Comparison */}
