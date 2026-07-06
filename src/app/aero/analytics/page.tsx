@@ -283,16 +283,27 @@ export default function AnalyticsPage() {
                       )}
                     </svg>
                     {/* Values and dots via flex */}
-                    <div className="absolute inset-0 flex gap-2">
-                      {MONTHS.map((_, i) => {
+                    <div className="absolute inset-0 flex gap-2" style={{ pointerEvents: "auto" }}>
+                      {MONTHS.map((m, i) => {
                         const pos = dotPositions.find(p => p.i === i);
+                        const prevRpp = monthlyRpp[i] && i > 0 ? monthlyRpp[i - 1] : 0;
+                        const momChange = prevRpp > 0 ? ((monthlyRpp[i] - prevRpp) / prevRpp) * 100 : 0;
                         return (
-                          <div key={i} className="flex-1 relative">
+                          <div key={i} className="flex-1 relative group/rpp">
                             {pos && (
-                              <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center" style={{ top: pos.dotY - 16 }}>
-                                <span className="text-[10px] text-purple-600 font-mono font-bold">{convert(pos.val, "USD").toFixed(0)}</span>
-                                <div className="w-3 h-3 rounded-full bg-white border-2 border-purple-500 shadow-sm" />
-                              </div>
+                              <>
+                                <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center" style={{ top: pos.dotY - 16 }}>
+                                  <span className="text-[10px] text-purple-600 font-mono font-bold">{convert(pos.val, "USD").toFixed(0)}</span>
+                                  <div className="w-3 h-3 rounded-full bg-white border-2 border-purple-500 shadow-sm group-hover/rpp:scale-150 transition-transform cursor-pointer" />
+                                </div>
+                                <div className="absolute left-1/2 -translate-x-1/2 opacity-0 group-hover/rpp:opacity-100 transition-opacity duration-200 z-30" style={{ top: pos.dotY - 60 }}>
+                                  <div className="bg-gray-900 text-white rounded-lg px-3 py-2 text-[10px] whitespace-nowrap shadow-xl">
+                                    <p className="font-bold">{m} {selectedYear}</p>
+                                    <p>Revenue per Pax: {convert(pos.val, "USD").toFixed(2)}</p>
+                                    {prevRpp > 0 && <p className={momChange >= 0 ? "text-emerald-400" : "text-red-400"}>vs {MONTHS[i - 1]}: {momChange >= 0 ? "+" : ""}{momChange.toFixed(1)}%</p>}
+                                  </div>
+                                </div>
+                              </>
                             )}
                           </div>
                         );
