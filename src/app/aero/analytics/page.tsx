@@ -203,10 +203,14 @@ export default function AnalyticsPage() {
               <div key={m} className={`flex-1 flex flex-col items-center group relative h-full ${!isInScope && viewMode === "ytd" ? "opacity-30" : ""}`}>
                 <div className="w-full flex-1 flex flex-col items-center justify-end overflow-hidden">
                   <span className="text-[9px] text-gray-500 font-mono mb-1 shrink-0">{symbol}{Math.round(convert(val, "USD") / 1000000)}M</span>
-                  <div
-                    className={`w-full rounded-t-md transition-colors duration-300 cursor-pointer animate-[growUp_0.8s_ease-out_forwards] ${isActual ? "bg-blue-500 hover:bg-blue-600" : "bg-blue-300 hover:bg-blue-400"}`}
-                    style={{ height: `${pct}%`, minHeight: val > 0 ? 4 : 0, animationDelay: `${i * 80}ms`, opacity: 0 }}
-                  />
+                  {val > 0 ? (
+                    <div
+                      className={`w-full rounded-t-md transition-colors duration-300 cursor-pointer animate-[growUp_0.8s_ease-out_forwards] ${isActual ? "bg-blue-500 hover:bg-blue-600" : "bg-blue-300 hover:bg-blue-400"}`}
+                      style={{ height: `${pct}%`, minHeight: 4, animationDelay: `${i * 80}ms`, opacity: 0 }}
+                    />
+                  ) : (
+                    <div className="w-full rounded-t-md bg-gray-100" style={{ minHeight: 4 }} />
+                  )}
                 </div>
                 <span className="text-[10px] text-gray-500 shrink-0 mt-1">{m}</span>
 
@@ -275,11 +279,10 @@ export default function AnalyticsPage() {
                 </tr>
               </thead>
               <tbody>
+                {/* Traffic metrics */}
                 {[
                   { name: "Total Passengers", prev: prevPax, cur: curPax, fmt: (v: number) => `${(v / 1000000).toFixed(1)}M` },
                   { name: "Total Movements", prev: prevMov, cur: curMov, fmt: (v: number) => `${(v / 1000).toFixed(0)}K` },
-                  { name: "Total Revenue", prev: prevRevenue, cur: curRevenue, fmt: (v: number) => `${symbol}${(convert(v, "USD") / 1000000).toFixed(0)}M` },
-                  { name: "Revenue per Pax", prev: prevRevPerPax, cur: revPerPax, fmt: (v: number) => `${symbol}${convert(v, "USD").toFixed(2)}` },
                 ].map(row => {
                   const delta = row.prev > 0 ? ((row.cur - row.prev) / row.prev) * 100 : 0;
                   return (
@@ -287,12 +290,43 @@ export default function AnalyticsPage() {
                       <td className="px-3 py-2.5 font-medium text-gray-900">{row.name}</td>
                       <td className="px-3 py-2.5 text-right text-gray-500 font-mono">{row.fmt(row.prev)}</td>
                       <td className="px-3 py-2.5 text-right text-gray-900 font-mono font-semibold">{row.fmt(row.cur)}</td>
-                      <td className={`px-3 py-2.5 text-right font-mono font-semibold ${delta >= 0 ? "text-emerald-600" : "text-red-500"}`}>
-                        {delta >= 0 ? "+" : ""}{delta.toFixed(1)}%
-                      </td>
+                      <td className={`px-3 py-2.5 text-right font-mono font-semibold ${delta >= 0 ? "text-emerald-600" : "text-red-500"}`}>{delta >= 0 ? "+" : ""}{delta.toFixed(1)}%</td>
                     </tr>
                   );
                 })}
+
+                {/* Separator */}
+                <tr><td colSpan={4} className="py-1"><div className="border-t border-gray-200" /></td></tr>
+
+                {/* Revenue lines in descending order */}
+                {revenueByLine.map(line => {
+                  const prevLineRev = revenueData.filter(d => d.year === selectedYear - 1 && activeMonths.includes(d.month) && d.metric_name === line.name).reduce((s, d) => s + Number(d.value), 0);
+                  const delta = prevLineRev > 0 ? ((line.revenue - prevLineRev) / prevLineRev) * 100 : 0;
+                  return (
+                    <tr key={line.name} className="border-b border-gray-50 hover:bg-gray-50/50">
+                      <td className="px-3 py-2.5 font-medium text-gray-700">{line.name}</td>
+                      <td className="px-3 py-2.5 text-right text-gray-500 font-mono">{symbol}{Math.round(convert(prevLineRev, "USD") / 1000000).toLocaleString()}M</td>
+                      <td className="px-3 py-2.5 text-right text-gray-900 font-mono font-semibold">{symbol}{Math.round(convert(line.revenue, "USD") / 1000000).toLocaleString()}M</td>
+                      <td className={`px-3 py-2.5 text-right font-mono font-semibold ${delta >= 0 ? "text-emerald-600" : "text-red-500"}`}>{delta >= 0 ? "+" : ""}{delta.toFixed(1)}%</td>
+                    </tr>
+                  );
+                })}
+
+                {/* Total Revenue - highlighted */}
+                <tr className="bg-blue-50/50 border-t-2 border-blue-200">
+                  <td className="px-3 py-2.5 font-bold text-gray-900">Total Revenue</td>
+                  <td className="px-3 py-2.5 text-right text-gray-500 font-mono font-semibold">{symbol}{Math.round(convert(prevRevenue, "USD") / 1000000).toLocaleString()}M</td>
+                  <td className="px-3 py-2.5 text-right text-gray-900 font-mono font-bold">{symbol}{Math.round(convert(curRevenue, "USD") / 1000000).toLocaleString()}M</td>
+                  <td className={`px-3 py-2.5 text-right font-mono font-bold ${revGrowth >= 0 ? "text-emerald-600" : "text-red-500"}`}>{revGrowth >= 0 ? "+" : ""}{revGrowth.toFixed(1)}%</td>
+                </tr>
+
+                {/* Revenue per Pax */}
+                <tr className="border-b border-gray-50 hover:bg-gray-50/50">
+                  <td className="px-3 py-2.5 font-medium text-gray-700 italic">Revenue per Pax</td>
+                  <td className="px-3 py-2.5 text-right text-gray-500 font-mono">{symbol}{convert(prevRevPerPax, "USD").toFixed(2)}</td>
+                  <td className="px-3 py-2.5 text-right text-gray-900 font-mono font-semibold">{symbol}{convert(revPerPax, "USD").toFixed(2)}</td>
+                  <td className={`px-3 py-2.5 text-right font-mono font-semibold ${rppGrowth >= 0 ? "text-emerald-600" : "text-red-500"}`}>{rppGrowth >= 0 ? "+" : ""}{rppGrowth.toFixed(1)}%</td>
+                </tr>
               </tbody>
             </table>
           </div>
