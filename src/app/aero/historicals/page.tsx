@@ -141,22 +141,25 @@ export default function HistoricalsPage() {
     return byYear;
   }
 
+  function getAllYears(values: DataValue[]): number[] {
+    const yrs = new Set(values.map(v => v.year));
+    return [...yrs].sort((a, b) => a - b);
+  }
+
   function generateRevenueTemplate() {
     const header = ["Airport", "Airline", "Revenue Line", "Year", ...MONTHS];
     const rows = [header.join(",")];
-    for (const apt of cfgAirports) {
-      const airlinesAtApt = cfgAirlines.filter(al => { const a = al.applicable_airports || []; return a.length === 0 || a.includes(apt.id); });
-      const linesAtApt = cfgLines.filter(l => { const a = l.applicable_airports || []; return a.length === 0 || a.includes(apt.id); });
-      for (const al of airlinesAtApt) {
-        for (const line of linesAtApt) {
-          const byYear = lookupValues(revenueValues, apt.code, al.code, line.name);
-          const years = Object.keys(byYear).map(Number).sort();
-          if (years.length > 0) {
-            for (const y of years) {
-              rows.push([apt.code, al.code, `"${line.name}"`, y, ...byYear[y].map(v => v || "")].join(","));
-            }
-          } else {
-            rows.push([apt.code, al.code, `"${line.name}"`, "", ...MONTHS.map(() => "")].join(","));
+    const years = getAllYears(revenueValues);
+
+    for (const yr of (years.length > 0 ? years : [0])) {
+      for (const apt of cfgAirports) {
+        const airlinesAtApt = cfgAirlines.filter(al => { const a = al.applicable_airports || []; return a.length === 0 || a.includes(apt.id); });
+        const linesAtApt = cfgLines.filter(l => { const a = l.applicable_airports || []; return a.length === 0 || a.includes(apt.id); });
+        for (const al of airlinesAtApt) {
+          for (const line of linesAtApt) {
+            const byYear = lookupValues(revenueValues, apt.code, al.code, line.name);
+            const vals = byYear[yr];
+            rows.push([apt.code, al.code, `"${line.name}"`, yr || "", ...(vals ? vals.map(v => v || "") : MONTHS.map(() => ""))].join(","));
           }
         }
       }
@@ -168,19 +171,17 @@ export default function HistoricalsPage() {
     const header = ["Airport", "Airline", "Metric", "Year", ...MONTHS];
     const rows = [header.join(",")];
     const kpiLines = ["Total Passengers", "Total Movements"];
-    for (const apt of cfgAirports) {
-      const airlinesAtApt = cfgAirlines.filter(al => { const a = al.applicable_airports || []; return a.length === 0 || a.includes(apt.id); });
-      for (const al of airlinesAtApt) {
-        const allMetrics = [...kpiLines, ...cfgDrivers.map(d => d.name)];
-        for (const metric of allMetrics) {
-          const byYear = lookupValues(trafficValues, apt.code, al.code, metric);
-          const years = Object.keys(byYear).map(Number).sort();
-          if (years.length > 0) {
-            for (const y of years) {
-              rows.push([apt.code, al.code, `"${metric}"`, y, ...byYear[y].map(v => v || "")].join(","));
-            }
-          } else {
-            rows.push([apt.code, al.code, `"${metric}"`, "", ...MONTHS.map(() => "")].join(","));
+    const allMetrics = [...kpiLines, ...cfgDrivers.map(d => d.name)];
+    const years = getAllYears(trafficValues);
+
+    for (const yr of (years.length > 0 ? years : [0])) {
+      for (const apt of cfgAirports) {
+        const airlinesAtApt = cfgAirlines.filter(al => { const a = al.applicable_airports || []; return a.length === 0 || a.includes(apt.id); });
+        for (const al of airlinesAtApt) {
+          for (const metric of allMetrics) {
+            const byYear = lookupValues(trafficValues, apt.code, al.code, metric);
+            const vals = byYear[yr];
+            rows.push([apt.code, al.code, `"${metric}"`, yr || "", ...(vals ? vals.map(v => v || "") : MONTHS.map(() => ""))].join(","));
           }
         }
       }
