@@ -205,7 +205,7 @@ export default function AnalyticsPage() {
                   <span className="text-[9px] text-gray-500 font-mono mb-1 shrink-0">{symbol}{Math.round(convert(val, "USD") / 1000000)}M</span>
                   {val > 0 ? (
                     <div
-                      className={`w-full rounded-t-md transition-colors duration-300 cursor-pointer animate-[growUp_0.8s_ease-out_forwards] ${isActual ? "bg-blue-500 hover:bg-blue-600" : "bg-blue-300 hover:bg-blue-400"}`}
+                      className="w-full rounded-t-md bg-blue-500 hover:bg-blue-600 transition-colors duration-300 cursor-pointer animate-[growUp_0.8s_ease-out_forwards]"
                       style={{ height: `${pct}%`, minHeight: 4, animationDelay: `${i * 80}ms`, opacity: 0 }}
                     />
                   ) : (
@@ -223,17 +223,13 @@ export default function AnalyticsPage() {
                           vs {selectedYear - 1}: {yoyDelta >= 0 ? "+" : ""}{yoyDelta.toFixed(1)}%
                         </p>
                       )}
-                      <p className="text-gray-400">{isActual ? "Actual" : "Forecast/Budget"}</p>
+                      <p className="text-gray-400">Actual</p>
                     </div>
                   </div>
                 )}
               </div>
             );
           })}
-        </div>
-        <div className="flex items-center gap-4 mt-3 justify-center text-[10px]">
-          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-blue-500" /> Actual</span>
-          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-blue-300" /> Forecast</span>
         </div>
         <style>{`@keyframes growUp { from { transform: scaleY(0); transform-origin: bottom; opacity: 0; } to { transform: scaleY(1); transform-origin: bottom; opacity: 1; } }`}</style>
       </div>
@@ -286,11 +282,11 @@ export default function AnalyticsPage() {
                 ].map(row => {
                   const delta = row.prev > 0 ? ((row.cur - row.prev) / row.prev) * 100 : 0;
                   return (
-                    <tr key={row.name} className="border-b border-gray-50 hover:bg-gray-50/50">
-                      <td className="px-3 py-2.5 font-medium text-gray-900">{row.name}</td>
-                      <td className="px-3 py-2.5 text-right text-gray-500 font-mono">{row.fmt(row.prev)}</td>
-                      <td className="px-3 py-2.5 text-right text-gray-900 font-mono font-semibold">{row.fmt(row.cur)}</td>
-                      <td className={`px-3 py-2.5 text-right font-mono font-semibold ${delta >= 0 ? "text-emerald-600" : "text-red-500"}`}>{delta >= 0 ? "+" : ""}{delta.toFixed(1)}%</td>
+                    <tr key={row.name} className="bg-blue-50/50 border-b border-blue-100">
+                      <td className="px-3 py-2.5 font-bold text-gray-900">{row.name}</td>
+                      <td className="px-3 py-2.5 text-right text-gray-500 font-mono font-semibold">{row.fmt(row.prev)}</td>
+                      <td className="px-3 py-2.5 text-right text-gray-900 font-mono font-bold">{row.fmt(row.cur)}</td>
+                      <td className={`px-3 py-2.5 text-right font-mono font-bold ${delta >= 0 ? "text-emerald-600" : "text-red-500"}`}>{delta >= 0 ? "+" : ""}{delta.toFixed(1)}%</td>
                     </tr>
                   );
                 })}
@@ -321,11 +317,11 @@ export default function AnalyticsPage() {
                 </tr>
 
                 {/* Revenue per Pax */}
-                <tr className="border-b border-gray-50 hover:bg-gray-50/50">
-                  <td className="px-3 py-2.5 font-medium text-gray-700 italic">Revenue per Pax</td>
-                  <td className="px-3 py-2.5 text-right text-gray-500 font-mono">{symbol}{convert(prevRevPerPax, "USD").toFixed(2)}</td>
-                  <td className="px-3 py-2.5 text-right text-gray-900 font-mono font-semibold">{symbol}{convert(revPerPax, "USD").toFixed(2)}</td>
-                  <td className={`px-3 py-2.5 text-right font-mono font-semibold ${rppGrowth >= 0 ? "text-emerald-600" : "text-red-500"}`}>{rppGrowth >= 0 ? "+" : ""}{rppGrowth.toFixed(1)}%</td>
+                <tr className="bg-blue-50/50 border-t border-blue-200">
+                  <td className="px-3 py-2.5 font-bold text-gray-900">Revenue per Pax</td>
+                  <td className="px-3 py-2.5 text-right text-gray-500 font-mono font-semibold">{symbol}{convert(prevRevPerPax, "USD").toFixed(2)}</td>
+                  <td className="px-3 py-2.5 text-right text-gray-900 font-mono font-bold">{symbol}{convert(revPerPax, "USD").toFixed(2)}</td>
+                  <td className={`px-3 py-2.5 text-right font-mono font-bold ${rppGrowth >= 0 ? "text-emerald-600" : "text-red-500"}`}>{rppGrowth >= 0 ? "+" : ""}{rppGrowth.toFixed(1)}%</td>
                 </tr>
               </tbody>
             </table>
