@@ -260,33 +260,22 @@ export default function AnalyticsPage() {
                   );
                 })}
               </div>
-              {/* RPP line overlay — positioned in top area above bars */}
-              <svg className="absolute left-0 right-0 top-0 h-16 pointer-events-none" preserveAspectRatio="none">
-                {monthlyRpp.some(v => v > 0) && (() => {
-                  const pts = monthlyRpp.map((v, i) => {
-                    if (v <= 0) return null;
-                    const x = ((i + 0.5) / 12) * 100;
-                    const normalized = (v - minRpp) / rppRange;
-                    const y = 90 - normalized * 50;
-                    return { x, y, val: v };
-                  }).filter(Boolean) as { x: number; y: number; val: number }[];
-                  const polyline = pts.map(p => `${p.x}%,${p.y}%`).join(" ");
-                  const fillPts = `${polyline} ${pts[pts.length - 1].x}%,100% ${pts[0].x}%,100%`;
+              {/* RPP line overlay — flex-based, same width as bars */}
+              <div className="absolute left-0 right-0 top-0 h-14 flex items-end gap-2 px-0">
+                {MONTHS.map((_, i) => {
+                  const rpp = monthlyRpp[i];
                   return (
-                    <>
-                      <defs><linearGradient id="rppFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.12" /><stop offset="100%" stopColor="#8b5cf6" stopOpacity="0" /></linearGradient></defs>
-                      <polygon points={fillPts} fill="url(#rppFill)" />
-                      <polyline points={polyline} fill="none" stroke="#8b5cf6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                      {pts.map((p, i) => (
-                        <g key={i}>
-                          <circle cx={`${p.x}%`} cy={`${p.y}%`} r="4" fill="white" stroke="#8b5cf6" strokeWidth="2" />
-                          <text x={`${p.x}%`} y={`${p.y - 8}%`} textAnchor="middle" fill="#7c3aed" style={{ fontSize: "11px", fontWeight: 700, fontFamily: "monospace" }}>{convert(p.val, "USD").toFixed(0)}</text>
-                        </g>
-                      ))}
-                    </>
+                    <div key={i} className="flex-1 flex flex-col items-center">
+                      {rpp > 0 && (
+                        <>
+                          <span className="text-[10px] text-purple-600 font-mono font-bold">{convert(rpp, "USD").toFixed(0)}</span>
+                          <div className="w-2.5 h-2.5 rounded-full bg-white border-2 border-purple-500 mt-0.5" />
+                        </>
+                      )}
+                    </div>
                   );
-                })()}
-              </svg>
+                })}
+              </div>
             </div>
             <style>{`@keyframes growUp { from { transform: scaleY(0); transform-origin: bottom; opacity: 0; } to { transform: scaleY(1); transform-origin: bottom; opacity: 1; } }`}</style>
           </div>
