@@ -209,94 +209,86 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Monthly Revenue Chart */}
-      {/* Revenue per Pax trend line */}
+      {/* Combined Revenue + RPP Chart */}
       {(() => {
         const monthlyPax = MONTHS.map((_, i) => filteredTraffic.filter(d => d.year === selectedYear && d.month === i + 1 && d.metric_name === "Total Passengers").reduce((s, d) => s + Number(d.value), 0));
         const monthlyRpp = MONTHS.map((_, i) => monthlyPax[i] > 0 ? monthlyRevenue[i] / monthlyPax[i] : 0);
         const maxRpp = Math.max(...monthlyRpp.filter(v => v > 0), 1);
         const minRpp = Math.min(...monthlyRpp.filter(v => v > 0), 0);
-        const range = maxRpp - minRpp || 1;
-        const hasData = monthlyRpp.some(v => v > 0);
-
-        if (!hasData) return null;
-
-        const points = monthlyRpp.map((v, i) => {
-          const pct = i / 11;
-          const y = v > 0 ? 55 - ((v - minRpp) / range) * 40 : 55;
-          return { pct, y, val: v };
-        }).filter(p => p.val > 0);
+        const rppRange = maxRpp - minRpp || 1;
 
         return (
-          <div className="bg-white rounded-xl border border-gray-200 p-6 mb-4 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-gray-900">Revenue per Passenger — {selectedYear}</h2>
-              <span className="text-xs text-gray-400 font-mono">avg {convert(monthlyRpp.filter(v => v > 0).reduce((a, b) => a + b, 0) / monthlyRpp.filter(v => v > 0).length || 0, "USD").toFixed(0)}</span>
+          <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-semibold text-gray-900">Monthly Revenue — {selectedYear}</h2>
+              <div className="flex items-center gap-4 text-[10px]">
+                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-blue-500" /> Revenue</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-1 rounded bg-purple-500" /> RPP</span>
+              </div>
             </div>
-            <div className="flex items-end gap-2 h-32">
-              {MONTHS.map((m, i) => {
-                const rpp = monthlyRpp[i];
-                const normalized = rpp > 0 ? ((rpp - minRpp) / range) : 0;
-                const barH = normalized * 60 + 20;
-                return (
-                  <div key={m} className="flex-1 flex flex-col items-center h-full justify-end">
-                    {rpp > 0 && <span className="text-[10px] text-gray-600 font-mono font-semibold shrink-0 mb-1">{convert(rpp, "USD").toFixed(0)}</span>}
-                    <div className="w-full flex-1 flex items-end">
-                      <div className="w-full rounded-t-md bg-gradient-to-t from-purple-500 to-purple-400 transition-all duration-300" style={{ height: rpp > 0 ? `${barH}%` : "0%", minHeight: rpp > 0 ? 8 : 0, opacity: 0, animation: `growUp 0.8s ease-out ${i * 60}ms forwards` }} />
+            <div className="relative">
+              {/* Bars */}
+              <div className="flex items-end gap-2 h-72">
+                {MONTHS.map((m, i) => {
+                  const val = monthlyRevenue[i];
+                  const prevVal = prevMonthlyRevenue[i];
+                  const pct = (val / maxMonthly) * 100;
+                  const yoyDelta = prevVal > 0 ? ((val - prevVal) / prevVal) * 100 : 0;
+                  const isInScope = activeMonths.includes(i + 1);
+
+                  return (
+                    <div key={m} className={`flex-1 flex flex-col items-center group relative h-full ${!isInScope && viewMode === "ytd" ? "opacity-30" : ""}`}>
+                      <div className="w-full flex-1 flex flex-col items-center justify-end overflow-hidden">
+                        <span className="text-[9px] text-gray-500 font-mono mb-1 shrink-0">{Math.round(convert(val, "USD") / 1000000)}m</span>
+                        {val > 0 ? (
+                          <div className="w-full rounded-t-md bg-blue-500 hover:bg-blue-600 transition-colors duration-300 cursor-pointer animate-[growUp_0.8s_ease-out_forwards]" style={{ height: `${pct}%`, minHeight: 4, animationDelay: `${i * 80}ms`, opacity: 0 }} />
+                        ) : (
+                          <div className="w-full rounded-t-md bg-gray-100" style={{ minHeight: 4 }} />
+                        )}
+                      </div>
+                      <span className="text-[10px] text-gray-500 shrink-0 mt-1">{m}</span>
+                      {val > 0 && (
+                        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-20">
+                          <div className="bg-gray-900 text-white rounded-lg px-3 py-2 text-[10px] whitespace-nowrap shadow-xl">
+                            <p className="font-bold mb-1">{m} {selectedYear}: {Math.round(convert(val, "USD") / 1000000).toLocaleString()}m</p>
+                            {prevVal > 0 && <p className={yoyDelta >= 0 ? "text-emerald-400" : "text-red-400"}>vs {selectedYear - 1}: {yoyDelta >= 0 ? "+" : ""}{yoyDelta.toFixed(1)}%</p>}
+                            {monthlyRpp[i] > 0 && <p className="text-purple-300">RPP: {convert(monthlyRpp[i], "USD").toFixed(0)}</p>}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <span className="text-[10px] text-gray-500 shrink-0 mt-1">{m}</span>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
+              {/* RPP line overlay */}
+              <svg className="absolute inset-0 w-full pointer-events-none" style={{ height: "calc(100% - 20px)" }}>
+                {monthlyRpp.some(v => v > 0) && (() => {
+                  const pts = monthlyRpp.map((v, i) => {
+                    if (v <= 0) return null;
+                    const x = ((i + 0.5) / 12) * 100;
+                    const normalized = (v - minRpp) / rppRange;
+                    const y = 85 - normalized * 55;
+                    return { x, y, val: v };
+                  }).filter(Boolean) as { x: number; y: number; val: number }[];
+                  const polyline = pts.map(p => `${p.x}%,${p.y}%`).join(" ");
+                  return (
+                    <>
+                      <polyline points={polyline} fill="none" stroke="#8b5cf6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                      {pts.map((p, i) => (
+                        <g key={i}>
+                          <circle cx={`${p.x}%`} cy={`${p.y}%`} r="4" fill="white" stroke="#8b5cf6" strokeWidth="2" />
+                          <text x={`${p.x}%`} y={`${p.y - 4}%`} textAnchor="middle" fill="#7c3aed" style={{ fontSize: "10px", fontWeight: 600, fontFamily: "monospace" }}>{convert(p.val, "USD").toFixed(0)}</text>
+                        </g>
+                      ))}
+                    </>
+                  );
+                })()}
+              </svg>
             </div>
+            <style>{`@keyframes growUp { from { transform: scaleY(0); transform-origin: bottom; opacity: 0; } to { transform: scaleY(1); transform-origin: bottom; opacity: 1; } }`}</style>
           </div>
         );
       })()}
-
-      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8 shadow-sm">
-        <h2 className="text-sm font-semibold text-gray-900 mb-4">Monthly Revenue — {selectedYear}</h2>
-        <div className="flex items-end gap-2 h-64">
-          {MONTHS.map((m, i) => {
-            const val = monthlyRevenue[i];
-            const prevVal = prevMonthlyRevenue[i];
-            const pct = (val / maxMonthly) * 100;
-            const yoyDelta = prevVal > 0 ? ((val - prevVal) / prevVal) * 100 : 0;
-            const isActual = actualMonths.has(i + 1);
-            const isInScope = activeMonths.includes(i + 1);
-
-            return (
-              <div key={m} className={`flex-1 flex flex-col items-center group relative h-full ${!isInScope && viewMode === "ytd" ? "opacity-30" : ""}`}>
-                <div className="w-full flex-1 flex flex-col items-center justify-end overflow-hidden">
-                  <span className="text-[9px] text-gray-500 font-mono mb-1 shrink-0">{Math.round(convert(val, "USD") / 1000000)}m</span>
-                  {val > 0 ? (
-                    <div
-                      className="w-full rounded-t-md bg-blue-500 hover:bg-blue-600 transition-colors duration-300 cursor-pointer animate-[growUp_0.8s_ease-out_forwards]"
-                      style={{ height: `${pct}%`, minHeight: 4, animationDelay: `${i * 80}ms`, opacity: 0 }}
-                    />
-                  ) : (
-                    <div className="w-full rounded-t-md bg-gray-100" style={{ minHeight: 4 }} />
-                  )}
-                </div>
-                <span className="text-[10px] text-gray-500 shrink-0 mt-1">{m}</span>
-
-                {val > 0 && (
-                  <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-20">
-                    <div className="bg-gray-900 text-white rounded-lg px-3 py-2 text-[10px] whitespace-nowrap shadow-xl">
-                      <p className="font-bold mb-1">{m} {selectedYear}: {Math.round(convert(val, "USD") / 1000000).toLocaleString()}m</p>
-                      {prevVal > 0 && (
-                        <p className={yoyDelta >= 0 ? "text-emerald-400" : "text-red-400"}>
-                          vs {selectedYear - 1}: {yoyDelta >= 0 ? "+" : ""}{yoyDelta.toFixed(1)}%
-                        </p>
-                      )}
-                      <p className="text-gray-400">Actual</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-        <style>{`@keyframes growUp { from { transform: scaleY(0); transform-origin: bottom; opacity: 0; } to { transform: scaleY(1); transform-origin: bottom; opacity: 1; } }`}</style>
-      </div>
 
       <div className="space-y-8 mb-8">
         {/* Revenue by Line — Pie Charts per Airport */}
