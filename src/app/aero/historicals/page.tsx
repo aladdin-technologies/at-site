@@ -24,7 +24,7 @@ export default function HistoricalsPage() {
   const [trafficValues, setTrafficValues] = useState<DataValue[]>([]);
   const [revenueValues, setRevenueValues] = useState<DataValue[]>([]);
   const [loading, setLoading] = useState(true);
-  const [uploading, setUploading] = useState(false);
+  const [uploadingType, setUploadingType] = useState<"traffic" | "revenue" | null>(null);
   const [uploadResult, setUploadResult] = useState<{ type: string; count: number; error?: string } | null>(null);
   const [viewMode, setViewMode] = useState<"revenue" | "traffic">("traffic");
   const [companyId, setCompanyId] = useState<string | null>(null);
@@ -174,12 +174,12 @@ export default function HistoricalsPage() {
   }
 
   async function handleFileUpload(file: File, dataType: "revenue" | "traffic") {
-    setUploading(true);
+    setUploadingType(dataType);
     setUploadResult(null);
     try {
       const text = await file.text();
       const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
-      if (lines.length < 2) { setUploadResult({ type: dataType, count: 0, error: "File is empty or has no data rows" }); setUploading(false); return; }
+      if (lines.length < 2) { setUploadResult({ type: dataType, count: 0, error: "File is empty or has no data rows" }); setUploadingType(null); return; }
 
       const header = lines[0].split(",").map(h => h.replace(/"/g, "").trim());
       const monthIndices: Record<number, number> = {};
@@ -195,7 +195,7 @@ export default function HistoricalsPage() {
 
       if (airportIdx < 0 || airlineIdx < 0 || metricIdx < 0) {
         setUploadResult({ type: dataType, count: 0, error: "Missing required columns: Airport, Airline, Metric/Revenue Line" });
-        setUploading(false); return;
+        setUploadingType(null); return;
       }
 
       const rows: any[] = [];
@@ -226,7 +226,7 @@ export default function HistoricalsPage() {
 
       if (rows.length === 0) {
         setUploadResult({ type: dataType, count: 0, error: "No data values found in the file. Make sure month columns have numbers." });
-        setUploading(false); return;
+        setUploadingType(null); return;
       }
 
       const uniqueKeys = new Set(rows.map(r => `${r.airport_code}:${r.airline_code}:${r.metric_name}:${r.year}`));
@@ -241,7 +241,7 @@ export default function HistoricalsPage() {
       for (let i = 0; i < rows.length; i += batchSize) {
         const batch = rows.slice(i, i + batchSize);
         const { error } = await supabase.from("historical_data").insert(batch);
-        if (error) { setUploadResult({ type: dataType, count: i, error: error.message }); setUploading(false); return; }
+        if (error) { setUploadResult({ type: dataType, count: i, error: error.message }); setUploadingType(null); return; }
       }
 
       setUploadResult({ type: dataType, count: rows.length });
@@ -249,7 +249,7 @@ export default function HistoricalsPage() {
     } catch (err: any) {
       setUploadResult({ type: dataType, count: 0, error: err.message || "Failed to process file" });
     }
-    setUploading(false);
+    setUploadingType(null);
   }
 
   function downloadCSV(content: string, filename: string) {
@@ -287,12 +287,12 @@ export default function HistoricalsPage() {
           <button onClick={() => downloadCSV(generateRevenueTemplate(), "revenue_template.csv")} disabled={cfgAirports.length === 0} className="flex flex-col items-center gap-1.5 px-3 py-3 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-gray-50 hover:border-blue-200 transition-colors disabled:opacity-40">
             <Download size={16} className="text-blue-500" /> Revenue Template
           </button>
-          <button onClick={() => trafficFileRef.current?.click()} disabled={uploading} className="flex flex-col items-center gap-1.5 px-3 py-3 rounded-lg border border-purple-200 bg-purple-50 text-xs font-medium text-purple-700 hover:bg-purple-100 transition-colors disabled:opacity-50">
-            {uploading ? <Loader2 size={16} className="text-purple-600 animate-spin" /> : <Upload size={16} className="text-purple-600" />}
+          <button onClick={() => trafficFileRef.current?.click()} disabled={uploadingType !== null} className="flex flex-col items-center gap-1.5 px-3 py-3 rounded-lg border border-purple-200 bg-purple-50 text-xs font-medium text-purple-700 hover:bg-purple-100 transition-colors disabled:opacity-50">
+            {uploadingType === "traffic" ? <Loader2 size={16} className="text-purple-600 animate-spin" /> : <Upload size={16} className="text-purple-600" />}
             Upload Traffic Data
           </button>
-          <button onClick={() => revenueFileRef.current?.click()} disabled={uploading} className="flex flex-col items-center gap-1.5 px-3 py-3 rounded-lg border border-blue-200 bg-blue-50 text-xs font-medium text-blue-700 hover:bg-blue-100 transition-colors disabled:opacity-50">
-            {uploading ? <Loader2 size={16} className="text-blue-600 animate-spin" /> : <Upload size={16} className="text-blue-600" />}
+          <button onClick={() => revenueFileRef.current?.click()} disabled={uploadingType !== null} className="flex flex-col items-center gap-1.5 px-3 py-3 rounded-lg border border-blue-200 bg-blue-50 text-xs font-medium text-blue-700 hover:bg-blue-100 transition-colors disabled:opacity-50">
+            {uploadingType === "revenue" ? <Loader2 size={16} className="text-blue-600 animate-spin" /> : <Upload size={16} className="text-blue-600" />}
             Upload Revenue Data
           </button>
           <input ref={revenueFileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleFileUpload(f, "revenue"); e.target.value = ""; }} />
