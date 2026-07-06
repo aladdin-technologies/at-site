@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import { Settings, Users, Save, Plus, Trash2, Mail, Search, Check, ChevronDown, Globe, Shield, Eye, Lock, KeyRound } from "lucide-react";
+import { Settings, Users, Save, Plus, Trash2, Mail, Search, Check, ChevronDown, Globe, Shield, Eye, Lock, KeyRound, Calendar } from "lucide-react";
+import { useActualMonths, setActualMonths } from "@/lib/useActualMonths";
 import { useAeroCurrency, setAeroCurrency } from "@/lib/useAeroCurrency";
 import { useExchangeRates } from "@/lib/useCurrency";
 import { TAB_KEYS, TAB_LABELS, type AccessLevel, type TabPermissions } from "@/lib/usePermissions";
@@ -51,6 +52,7 @@ export default function SettingsPage() {
   const [tab, setTab] = useState<Tab>("general");
   const baseCurrency = useAeroCurrency();
   const rates = useExchangeRates();
+  const { actualMonths } = useActualMonths();
 
   useEffect(() => {
     const t = searchParams.get("tab");
@@ -232,6 +234,39 @@ export default function SettingsPage() {
                 </select>
               </div>
             </div>
+          </div>
+
+          {/* Actual Months */}
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="flex items-center gap-2 mb-1">
+              <Calendar size={16} className="text-blue-500" />
+              <h2 className="text-sm font-semibold text-gray-900">Actual Months</h2>
+            </div>
+            <p className="text-xs text-gray-500 mb-4">Select which months have actual (confirmed) data. Used in Analytics for YTD calculations.</p>
+            <div className="grid grid-cols-6 sm:grid-cols-12 gap-2">
+              {["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map((m, i) => {
+                const monthNum = i + 1;
+                const isActive = actualMonths.has(monthNum);
+                return (
+                  <button
+                    key={m}
+                    onClick={() => {
+                      const next = new Set(actualMonths);
+                      isActive ? next.delete(monthNum) : next.add(monthNum);
+                      setActualMonths(next);
+                    }}
+                    className={`px-2 py-2 rounded-lg text-xs font-medium transition-colors border ${
+                      isActive
+                        ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                        : "bg-white border-gray-200 text-gray-400 hover:border-gray-300"
+                    }`}
+                  >
+                    {m}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-[10px] text-gray-400 mt-3">{actualMonths.size} actual month{actualMonths.size !== 1 ? "s" : ""} selected</p>
           </div>
 
           <button onClick={handleSave} className="flex items-center gap-2 px-5 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors">
