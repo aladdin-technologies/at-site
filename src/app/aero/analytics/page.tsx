@@ -260,22 +260,47 @@ export default function AnalyticsPage() {
                   );
                 })}
               </div>
-              {/* RPP line overlay — flex-based, same width as bars */}
-              <div className="absolute left-0 right-0 top-0 h-14 flex items-end gap-2 px-0">
-                {MONTHS.map((_, i) => {
-                  const rpp = monthlyRpp[i];
-                  return (
-                    <div key={i} className="flex-1 flex flex-col items-center">
-                      {rpp > 0 && (
-                        <>
-                          <span className="text-[10px] text-purple-600 font-mono font-bold">{convert(rpp, "USD").toFixed(0)}</span>
-                          <div className="w-2.5 h-2.5 rounded-full bg-white border-2 border-purple-500 mt-0.5" />
-                        </>
+              {/* RPP line overlay with connecting line */}
+              {(() => {
+                const rppH = 60;
+                const dotPositions = monthlyRpp.map((v, i) => {
+                  if (v <= 0) return null;
+                  const normalized = (v - minRpp) / rppRange;
+                  const dotY = rppH - 16 - normalized * (rppH - 32);
+                  return { i, val: v, dotY };
+                }).filter(Boolean) as { i: number; val: number; dotY: number }[];
+
+                return (
+                  <div className="absolute left-0 right-0 top-0 pointer-events-none" style={{ height: rppH }}>
+                    {/* SVG line using viewBox matching pixel dimensions */}
+                    <svg className="absolute inset-0 w-full" viewBox={`0 0 ${12 * 100} ${rppH}`} preserveAspectRatio="none" style={{ height: rppH, overflow: "visible" }}>
+                      {dotPositions.length > 1 && (
+                        <polyline
+                          points={dotPositions.map(p => `${p.i * 100 + 50},${p.dotY + 5}`).join(" ")}
+                          fill="none" stroke="#8b5cf6" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
+                          vectorEffect="non-scaling-stroke"
+                        />
                       )}
+                    </svg>
+                    {/* Values and dots via flex */}
+                    <div className="absolute inset-0 flex gap-2">
+                      {MONTHS.map((_, i) => {
+                        const pos = dotPositions.find(p => p.i === i);
+                        return (
+                          <div key={i} className="flex-1 relative">
+                            {pos && (
+                              <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center" style={{ top: pos.dotY - 16 }}>
+                                <span className="text-[10px] text-purple-600 font-mono font-bold">{convert(pos.val, "USD").toFixed(0)}</span>
+                                <div className="w-3 h-3 rounded-full bg-white border-2 border-purple-500 shadow-sm" />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                );
+              })()}
             </div>
             <style>{`@keyframes growUp { from { transform: scaleY(0); transform-origin: bottom; opacity: 0; } to { transform: scaleY(1); transform-origin: bottom; opacity: 1; } }`}</style>
           </div>
