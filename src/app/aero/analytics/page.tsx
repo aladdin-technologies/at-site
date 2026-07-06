@@ -291,16 +291,26 @@ export default function AnalyticsPage() {
                           const start = polarToCartesian(100, 100, 85, s.startAngle);
                           const end = polarToCartesian(100, 100, 85, s.endAngle);
                           const largeArc = s.pct > 0.5 ? 1 : 0;
+                          const midAngle = (s.startAngle + s.endAngle) / 2;
                           return (
-                            <path
-                              key={i}
-                              d={`M100,100 L${start.x},${start.y} A85,85 0 ${largeArc} 1 ${end.x},${end.y} Z`}
-                              fill={s.color}
-                              stroke="white"
-                              strokeWidth="2"
-                              className="transition-all duration-300 hover:opacity-80"
-                              style={{ opacity: 0, animation: `sliceIn 0.5s ease-out ${pieIdx * 0.2 + i * 0.1}s forwards`, transformOrigin: "100px 100px" }}
-                            />
+                            <g key={i} className="group/slice">
+                              <path
+                                d={`M100,100 L${start.x},${start.y} A85,85 0 ${largeArc} 1 ${end.x},${end.y} Z`}
+                                fill={s.color}
+                                stroke="white"
+                                strokeWidth="2"
+                                className="transition-all duration-300 hover:brightness-110 cursor-pointer"
+                                style={{ opacity: 0, animation: `sliceIn 0.5s ease-out ${pieIdx * 0.2 + i * 0.1}s forwards`, transformOrigin: "100px 100px" }}
+                              />
+                              <foreignObject x="0" y="0" width="200" height="200" className="pointer-events-none opacity-0 group-hover/slice:opacity-100 transition-opacity duration-200" style={{ overflow: "visible" }}>
+                                <div style={{ position: "absolute", left: `${100 + 95 * Math.cos((midAngle - 90) * Math.PI / 180)}px`, top: `${100 + 95 * Math.sin((midAngle - 90) * Math.PI / 180)}px`, transform: "translate(-50%, -50%)" }}>
+                                  <div className="bg-gray-900 text-white rounded-lg px-2.5 py-1.5 text-[10px] whitespace-nowrap shadow-xl">
+                                    <p className="font-bold">{s.name}</p>
+                                    <p>{Math.round(convert(s.rev, "USD") / 1000000).toLocaleString()}m · {(s.pct * 100).toFixed(1)}%</p>
+                                  </div>
+                                </div>
+                              </foreignObject>
+                            </g>
                           );
                         })}
                         <circle cx="100" cy="100" r="52" fill="white" className="drop-shadow-sm" />
