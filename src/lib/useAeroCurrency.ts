@@ -2,15 +2,11 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { fetchExchangeRates, convertAmount } from "./useCurrency";
-
-const STORAGE_KEY = "aero-base-currency";
+import { loadSetting, saveSetting } from "./persistSettings";
 
 let aeroCurrency = "USD";
+let loaded = false;
 const listeners = new Set<(c: string) => void>();
-
-if (typeof window !== "undefined") {
-  aeroCurrency = sessionStorage.getItem(STORAGE_KEY) || "USD";
-}
 
 export function getAeroCurrency() {
   return aeroCurrency;
@@ -18,16 +14,21 @@ export function getAeroCurrency() {
 
 export function setAeroCurrency(c: string) {
   aeroCurrency = c;
-  if (typeof window !== "undefined") {
-    sessionStorage.setItem(STORAGE_KEY, c);
-  }
   listeners.forEach((fn) => fn(c));
+  saveSetting("base_currency", c);
 }
 
 export function useAeroCurrency() {
   const [currency, setCurrency] = useState(aeroCurrency);
   useEffect(() => {
-    setCurrency(aeroCurrency);
+    if (!loaded) {
+      loaded = true;
+      loadSetting<string>("base_currency", "USD").then(c => {
+        aeroCurrency = c;
+        setCurrency(c);
+        listeners.forEach(fn => fn(c));
+      });
+    }
     listeners.add(setCurrency);
     return () => { listeners.delete(setCurrency); };
   }, []);
