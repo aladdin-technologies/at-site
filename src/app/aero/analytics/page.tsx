@@ -250,30 +250,65 @@ export default function AnalyticsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Revenue by Line */}
+        {/* Revenue by Line — Pie Charts per Airport */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <h2 className="text-sm font-semibold text-gray-900 mb-5">Revenue by Line</h2>
-          {revenueByLine.length === 0 ? (
-            <p className="text-xs text-gray-400 text-center py-8">No revenue data for {selectedYear}</p>
-          ) : (
-            <div className="space-y-3">
-              {revenueByLine.map((line, i) => {
-                const pct = totalLineRev > 0 ? (line.revenue / totalLineRev) * 100 : 0;
-                return (
-                  <div key={line.name}>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm text-gray-700 font-medium">{line.name}</span>
-                      <span className="text-sm text-gray-500 font-mono">{Math.round(convert(line.revenue, "USD") / 1000000).toLocaleString()}m</span>
-                    </div>
-                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full transition-all duration-1000 ease-out" style={{ width: `${pct}%`, backgroundColor: lineColors[i % lineColors.length] }} />
-                    </div>
-                    <p className="text-[10px] text-gray-400 mt-0.5">{pct.toFixed(1)}% of total</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            {["ALL", ...availableAirports].map(aptCode => {
+              const aptRevData = aptCode === "ALL" ? revenueData : revenueData.filter(d => d.airport_code === aptCode);
+              const byLine: Record<string, number> = {};
+              for (const d of aptRevData) {
+                if (d.year === selectedYear && activeMonths.includes(d.month)) {
+                  byLine[d.metric_name] = (byLine[d.metric_name] || 0) + Number(d.value);
+                }
+              }
+              const lines = Object.entries(byLine).map(([name, rev]) => ({ name, rev })).sort((a, b) => b.rev - a.rev);
+              const total = lines.reduce((s, l) => s + l.rev, 0);
+              if (total === 0) return null;
+
+              let cumAngle = 0;
+              const slices = lines.map((l, i) => {
+                const pct = l.rev / total;
+                const startAngle = cumAngle;
+                cumAngle += pct * 360;
+                return { ...l, pct, startAngle, endAngle: cumAngle, color: lineColors[i % lineColors.length] };
+              });
+
+              function polarToCartesian(cx: number, cy: number, r: number, deg: number) {
+                const rad = (deg - 90) * Math.PI / 180;
+                return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+              }
+
+              return (
+                <div key={aptCode} className="text-center">
+                  <p className="text-xs font-bold text-gray-900 mb-3 font-mono">{aptCode === "ALL" ? "All Airports" : aptCode}</p>
+                  <svg viewBox="0 0 200 200" className="w-36 h-36 mx-auto mb-3">
+                    {slices.map((s, i) => {
+                      if (s.pct >= 0.999) {
+                        return <circle key={i} cx="100" cy="100" r="80" fill={s.color} />;
+                      }
+                      const start = polarToCartesian(100, 100, 80, s.startAngle);
+                      const end = polarToCartesian(100, 100, 80, s.endAngle);
+                      const largeArc = s.pct > 0.5 ? 1 : 0;
+                      return <path key={i} d={`M100,100 L${start.x},${start.y} A80,80 0 ${largeArc} 1 ${end.x},${end.y} Z`} fill={s.color} stroke="white" strokeWidth="1.5" />;
+                    })}
+                    <circle cx="100" cy="100" r="45" fill="white" />
+                    <text x="100" y="96" textAnchor="middle" className="text-sm font-bold fill-gray-900">{Math.round(convert(total, "USD") / 1000000).toLocaleString()}m</text>
+                    <text x="100" y="112" textAnchor="middle" className="text-[9px] fill-gray-400">Total</text>
+                  </svg>
+                  <div className="space-y-1 text-left">
+                    {slices.map((s, i) => (
+                      <div key={i} className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
+                        <span className="text-[10px] text-gray-600 flex-1 truncate">{s.name}</span>
+                        <span className="text-[10px] text-gray-400 font-mono">{(s.pct * 100).toFixed(0)}%</span>
+                      </div>
+                    ))}
                   </div>
-                );
-              })}
-            </div>
-          )}
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {/* YoY Comparison */}
