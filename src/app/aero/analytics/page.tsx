@@ -247,12 +247,10 @@ export default function AnalyticsPage() {
                         )}
                       </div>
                       <span className="text-[10px] text-gray-500 shrink-0 mt-1">{m}</span>
-                      {val > 0 && (
+                      {val > 0 && prevVal > 0 && (
                         <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-20">
                           <div className="bg-gray-900 text-white rounded-lg px-3 py-2 text-[10px] whitespace-nowrap shadow-xl">
-                            <p className="font-bold mb-1">{m} {selectedYear}: {Math.round(convert(val, "USD") / 1000000).toLocaleString()}m</p>
-                            {prevVal > 0 && <p className={yoyDelta >= 0 ? "text-emerald-400" : "text-red-400"}>vs {selectedYear - 1}: {yoyDelta >= 0 ? "+" : ""}{yoyDelta.toFixed(1)}%</p>}
-                            {monthlyRpp[i] > 0 && <p className="text-purple-300">RPP: {convert(monthlyRpp[i], "USD").toFixed(0)}</p>}
+                            <p className={yoyDelta >= 0 ? "text-emerald-400" : "text-red-400"}>vs {selectedYear - 1}: {yoyDelta >= 0 ? "+" : ""}{yoyDelta.toFixed(1)}%</p>
                           </div>
                         </div>
                       )}
@@ -286,8 +284,10 @@ export default function AnalyticsPage() {
                     <div className="absolute inset-0 flex gap-2" style={{ pointerEvents: "auto" }}>
                       {MONTHS.map((m, i) => {
                         const pos = dotPositions.find(p => p.i === i);
-                        const prevRpp = monthlyRpp[i] && i > 0 ? monthlyRpp[i - 1] : 0;
-                        const momChange = prevRpp > 0 ? ((monthlyRpp[i] - prevRpp) / prevRpp) * 100 : 0;
+                        const prevYearPax = filteredTraffic.filter(d => d.year === selectedYear - 1 && d.month === i + 1 && d.metric_name === "Total Passengers").reduce((s, d) => s + Number(d.value), 0);
+                        const prevYearRev = filteredRevenue.filter(d => d.year === selectedYear - 1 && d.month === i + 1).reduce((s, d) => s + Number(d.value), 0);
+                        const prevYearRpp = prevYearPax > 0 ? prevYearRev / prevYearPax : 0;
+                        const yoyRppChange = prevYearRpp > 0 ? ((monthlyRpp[i] - prevYearRpp) / prevYearRpp) * 100 : 0;
                         return (
                           <div key={i} className="flex-1 relative group/rpp">
                             {pos && (
@@ -296,13 +296,13 @@ export default function AnalyticsPage() {
                                   <span className="text-[10px] text-purple-600 font-mono font-bold">{convert(pos.val, "USD").toFixed(0)}</span>
                                   <div className="w-3 h-3 rounded-full bg-white border-2 border-purple-500 shadow-sm group-hover/rpp:scale-150 transition-transform cursor-pointer" />
                                 </div>
-                                <div className="absolute left-1/2 -translate-x-1/2 opacity-0 group-hover/rpp:opacity-100 transition-opacity duration-200 z-30" style={{ top: pos.dotY - 60 }}>
-                                  <div className="bg-gray-900 text-white rounded-lg px-3 py-2 text-[10px] whitespace-nowrap shadow-xl">
-                                    <p className="font-bold">{m} {selectedYear}</p>
-                                    <p>Revenue per Pax: {convert(pos.val, "USD").toFixed(2)}</p>
-                                    {prevRpp > 0 && <p className={momChange >= 0 ? "text-emerald-400" : "text-red-400"}>vs {MONTHS[i - 1]}: {momChange >= 0 ? "+" : ""}{momChange.toFixed(1)}%</p>}
+                                {prevYearRpp > 0 && (
+                                  <div className="absolute left-1/2 -translate-x-1/2 opacity-0 group-hover/rpp:opacity-100 transition-opacity duration-200 z-30" style={{ top: pos.dotY - 44 }}>
+                                    <div className="bg-gray-900 text-white rounded-lg px-3 py-2 text-[10px] whitespace-nowrap shadow-xl">
+                                      <p className={yoyRppChange >= 0 ? "text-emerald-400" : "text-red-400"}>vs {selectedYear - 1}: {yoyRppChange >= 0 ? "+" : ""}{yoyRppChange.toFixed(1)}%</p>
+                                    </div>
                                   </div>
-                                </div>
+                                )}
                               </>
                             )}
                           </div>
