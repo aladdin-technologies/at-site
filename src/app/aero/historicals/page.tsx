@@ -229,10 +229,18 @@ export default function HistoricalsPage() {
         setUploadingType(null); return;
       }
 
-      const years = [...new Set(rows.map(r => r.year))];
-      for (const yr of years) {
+      const deleteKeys = new Set(rows.map(r => `${r.airport_code}|${r.airline_code}|${r.metric_name}|${r.year}|${r.month}`));
+      const deleteByYearMonth: Record<string, Set<string>> = {};
+      for (const key of deleteKeys) {
+        const [ac, alc, mn, yr, mo] = key.split("|");
+        const ym = `${yr}|${mo}`;
+        if (!deleteByYearMonth[ym]) deleteByYearMonth[ym] = new Set();
+        deleteByYearMonth[ym].add(`${ac}|${alc}|${mn}`);
+      }
+      for (const [ym] of Object.entries(deleteByYearMonth)) {
+        const [yr, mo] = ym.split("|");
         await supabase.from("historical_data").delete()
-          .eq("data_type", dataType).eq("year", yr);
+          .eq("data_type", dataType).eq("year", parseInt(yr)).eq("month", parseInt(mo));
       }
 
       const batchSize = 500;
