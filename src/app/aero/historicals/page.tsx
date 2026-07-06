@@ -229,12 +229,10 @@ export default function HistoricalsPage() {
         setUploadingType(null); return;
       }
 
-      const uniqueKeys = new Set(rows.map(r => `${r.airport_code}:${r.airline_code}:${r.metric_name}:${r.year}`));
-      for (const key of uniqueKeys) {
-        const [ac, alc, mn, yr] = key.split(":");
+      const years = [...new Set(rows.map(r => r.year))];
+      for (const yr of years) {
         await supabase.from("historical_data").delete()
-          .eq("data_type", dataType).eq("airport_code", ac).eq("airline_code", alc)
-          .eq("metric_name", mn).eq("year", parseInt(yr));
+          .eq("data_type", dataType).eq("year", yr);
       }
 
       const batchSize = 500;
