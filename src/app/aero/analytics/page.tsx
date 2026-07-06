@@ -221,8 +221,8 @@ export default function AnalyticsPage() {
         if (!hasData) return null;
 
         const points = monthlyRpp.map((v, i) => {
-          const x = 40 + (i / 11) * 720;
-          const y = v > 0 ? 120 - ((v - minRpp) / range) * 100 : 120;
+          const x = 20 + (i / 11) * 760;
+          const y = v > 0 ? 110 - ((v - minRpp) / range) * 80 : 110;
           return { x, y, val: v };
         }).filter(p => p.val > 0);
 
@@ -236,7 +236,7 @@ export default function AnalyticsPage() {
                 avg {convert(monthlyRpp.filter(v => v > 0).reduce((a, b) => a + b, 0) / monthlyRpp.filter(v => v > 0).length || 0, "USD").toFixed(0)}
               </span>
             </div>
-            <svg viewBox="0 0 800 140" className="w-full h-28">
+            <svg viewBox="0 0 800 160" className="w-full h-36">
               <defs>
                 <linearGradient id="rppGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.15" />
@@ -245,20 +245,20 @@ export default function AnalyticsPage() {
               </defs>
               {points.length > 1 && (
                 <>
-                  <path d={`${linePath} L${points[points.length - 1].x},130 L${points[0].x},130 Z`} fill="url(#rppGrad)" />
+                  <path d={`${linePath} L${points[points.length - 1].x},140 L${points[0].x},140 Z`} fill="url(#rppGrad)" />
                   <path d={linePath} fill="none" stroke="#8b5cf6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="animate-[drawLine_1.5s_ease-out]" />
                 </>
               )}
               {points.map((p, i) => (
                 <g key={i}>
-                  <circle cx={p.x} cy={p.y} r="4" fill="white" stroke="#8b5cf6" strokeWidth="2" />
-                  <text x={p.x} y={p.y - 10} textAnchor="middle" className="fill-gray-500" style={{ fontSize: "9px", fontFamily: "monospace" }}>
+                  <circle cx={p.x} cy={p.y} r="5" fill="white" stroke="#8b5cf6" strokeWidth="2.5" />
+                  <text x={p.x} y={p.y - 14} textAnchor="middle" className="fill-gray-500" style={{ fontSize: "11px", fontFamily: "monospace" }}>
                     {convert(p.val, "USD").toFixed(0)}
                   </text>
                 </g>
               ))}
               {MONTHS.map((m, i) => (
-                <text key={m} x={40 + (i / 11) * 720} y={138} textAnchor="middle" className="fill-gray-400" style={{ fontSize: "9px" }}>{m}</text>
+                <text key={m} x={20 + (i / 11) * 760} y={155} textAnchor="middle" className="fill-gray-400" style={{ fontSize: "11px" }}>{m}</text>
               ))}
               <style>{`@keyframes drawLine { from { stroke-dasharray: 2000; stroke-dashoffset: 2000; } to { stroke-dasharray: 2000; stroke-dashoffset: 0; } }`}</style>
             </svg>
