@@ -281,19 +281,19 @@ export default function HistoricalsPage() {
         <h2 className="text-sm font-semibold text-gray-900 mb-1">Templates & Upload</h2>
         <p className="text-xs text-gray-500 mb-4">Download pre-filled templates based on your revenue structure, or upload completed data</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          <button onClick={() => downloadCSV(generateRevenueTemplate(), "revenue_template.csv")} disabled={cfgAirports.length === 0} className="flex flex-col items-center gap-1.5 px-3 py-3 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-gray-50 hover:border-blue-200 transition-colors disabled:opacity-40">
-            <Download size={16} className="text-blue-500" /> Revenue Template
-          </button>
-          <button onClick={() => downloadCSV(generateTrafficTemplate(), "traffic_template.csv")} disabled={cfgAirports.length === 0} className="flex flex-col items-center gap-1.5 px-3 py-3 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-gray-50 hover:border-blue-200 transition-colors disabled:opacity-40">
+          <button onClick={() => downloadCSV(generateTrafficTemplate(), "traffic_template.csv")} disabled={cfgAirports.length === 0} className="flex flex-col items-center gap-1.5 px-3 py-3 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-gray-50 hover:border-purple-200 transition-colors disabled:opacity-40">
             <Download size={16} className="text-purple-500" /> Traffic Template
           </button>
-          <button onClick={() => revenueFileRef.current?.click()} disabled={uploading} className="flex flex-col items-center gap-1.5 px-3 py-3 rounded-lg border border-blue-200 bg-blue-50 text-xs font-medium text-blue-700 hover:bg-blue-100 transition-colors disabled:opacity-50">
-            {uploading ? <Loader2 size={16} className="text-blue-600 animate-spin" /> : <Upload size={16} className="text-blue-600" />}
-            Upload Revenue Data
+          <button onClick={() => downloadCSV(generateRevenueTemplate(), "revenue_template.csv")} disabled={cfgAirports.length === 0} className="flex flex-col items-center gap-1.5 px-3 py-3 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-gray-50 hover:border-blue-200 transition-colors disabled:opacity-40">
+            <Download size={16} className="text-blue-500" /> Revenue Template
           </button>
           <button onClick={() => trafficFileRef.current?.click()} disabled={uploading} className="flex flex-col items-center gap-1.5 px-3 py-3 rounded-lg border border-purple-200 bg-purple-50 text-xs font-medium text-purple-700 hover:bg-purple-100 transition-colors disabled:opacity-50">
             {uploading ? <Loader2 size={16} className="text-purple-600 animate-spin" /> : <Upload size={16} className="text-purple-600" />}
             Upload Traffic Data
+          </button>
+          <button onClick={() => revenueFileRef.current?.click()} disabled={uploading} className="flex flex-col items-center gap-1.5 px-3 py-3 rounded-lg border border-blue-200 bg-blue-50 text-xs font-medium text-blue-700 hover:bg-blue-100 transition-colors disabled:opacity-50">
+            {uploading ? <Loader2 size={16} className="text-blue-600 animate-spin" /> : <Upload size={16} className="text-blue-600" />}
+            Upload Revenue Data
           </button>
           <input ref={revenueFileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleFileUpload(f, "revenue"); e.target.value = ""; }} />
           <input ref={trafficFileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleFileUpload(f, "traffic"); e.target.value = ""; }} />
@@ -328,8 +328,8 @@ export default function HistoricalsPage() {
               <span className="flex items-center gap-1"><MinusCircle size={12} className="text-gray-300" /> Missing</span>
             </div>
             <div className="flex rounded-lg border border-gray-200 overflow-hidden">
-              <button onClick={() => setViewMode("revenue")} className={`px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === "revenue" ? "bg-blue-50 text-blue-700" : "text-gray-500 hover:bg-gray-50"}`}>Revenue</button>
               <button onClick={() => setViewMode("traffic")} className={`px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === "traffic" ? "bg-purple-50 text-purple-700" : "text-gray-500 hover:bg-gray-50"}`}>Traffic</button>
+              <button onClick={() => setViewMode("revenue")} className={`px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === "revenue" ? "bg-blue-50 text-blue-700" : "text-gray-500 hover:bg-gray-50"}`}>Revenue</button>
             </div>
             {(totalTraffic > 0 || totalRevenue > 0) && (
               <button onClick={clearAllData} className="px-3 py-1.5 text-[10px] font-medium text-red-500 hover:text-red-700 hover:underline transition-colors">Clear All Data</button>
