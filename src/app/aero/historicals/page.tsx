@@ -34,21 +34,21 @@ export default function HistoricalsPage() {
     const cid = compRes.data?.[0]?.id;
     if (cid) setCompanyId(cid);
 
-    const [aRes, alRes, lRes, dRes, hRes] = await Promise.all([
+    const [aRes, alRes, lRes, dRes, htRes, hrRes] = await Promise.all([
       supabase.from("forecast_airports").select("id, code, name").order("code"),
       supabase.from("forecast_airlines").select("id, code, name, applicable_airports").order("code"),
       supabase.from("forecast_charge_types").select("id, name, applicable_airports, driver_id").order("sort_order"),
       supabase.from("forecast_drivers").select("id, name, unit").order("name"),
-      supabase.from("historical_data").select("data_type, airport_code, airline_code, year, month").limit(10000),
+      fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/get_coverage_summary`, { method: "POST", headers: { "Content-Type": "application/json", apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}` }, body: JSON.stringify({ p_type: "traffic" }) }).then(r => r.json()).then(data => ({ data })).catch(() => ({ data: [] })),
+      fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/get_coverage_summary`, { method: "POST", headers: { "Content-Type": "application/json", apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}` }, body: JSON.stringify({ p_type: "revenue" }) }).then(r => r.json()).then(data => ({ data })).catch(() => ({ data: [] })),
     ]);
     setCfgAirports((aRes.data ?? []) as CfgAirport[]);
     setCfgAirlines((alRes.data ?? []) as CfgAirline[]);
     setCfgLines((lRes.data ?? []) as CfgLine[]);
     setCfgDrivers((dRes.data ?? []) as CfgDriver[]);
 
-    const hist = (hRes.data ?? []) as any[];
-    setTrafficPoints(hist.filter(h => h.data_type === "traffic").map(h => ({ year: h.year, month: h.month, airport_code: h.airport_code, airline_code: h.airline_code })));
-    setRevenuePoints(hist.filter(h => h.data_type === "revenue").map(h => ({ year: h.year, month: h.month, airport_code: h.airport_code, airline_code: h.airline_code })));
+    setTrafficPoints((htRes.data ?? []).map((h: any) => ({ year: h.year, month: h.month, airport_code: h.airport_code, airline_code: h.airline_code })));
+    setRevenuePoints((hrRes.data ?? []).map((h: any) => ({ year: h.year, month: h.month, airport_code: h.airport_code, airline_code: h.airline_code })));
     setLoading(false);
   }
 
@@ -56,38 +56,41 @@ export default function HistoricalsPage() {
 
   const activePoints = viewMode === "traffic" ? trafficPoints : revenuePoints;
 
-  const monthCoverage = useMemo(() => {
-    if (cfgAirports.length === 0 || cfgAirlines.length === 0) return {};
-
-    const expectedCombos = new Set<string>();
+  const expectedCombos = useMemo(() => {
+    const combos = new Set<string>();
     for (const apt of cfgAirports) {
       for (const al of cfgAirlines) {
         const alApts = al.applicable_airports || [];
         if (alApts.length === 0 || alApts.includes(apt.id)) {
-          expectedCombos.add(`${apt.code}:${al.code}`);
+          combos.add(`${apt.code}:${al.code}`);
         }
       }
     }
-    const expectedCount = expectedCombos.size;
+    return combos;
+  }, [cfgAirports, cfgAirlines]);
 
-    const result: Record<string, "full" | "partial" | "none"> = {};
+  const monthCoverage = useMemo(() => {
+    if (expectedCombos.size === 0) return {};
+
+    const result: Record<string, { status: "full" | "partial" | "none"; found: Set<string>; missing: string[] }> = {};
     for (const year of YEARS) {
       for (let m = 1; m <= 12; m++) {
         const key = `${year}-${m}`;
         const matchingPoints = activePoints.filter(p => p.year === year && p.month === m);
-        const uniqueCombos = new Set(matchingPoints.map(p => `${p.airport_code}:${p.airline_code}`));
+        const found = new Set(matchingPoints.map(p => `${p.airport_code}:${p.airline_code}`));
+        const missing = [...expectedCombos].filter(c => !found.has(c));
 
-        if (uniqueCombos.size === 0) {
-          result[key] = "none";
-        } else if (uniqueCombos.size >= expectedCount) {
-          result[key] = "full";
+        if (found.size === 0) {
+          result[key] = { status: "none", found, missing };
+        } else if (missing.length === 0) {
+          result[key] = { status: "full", found, missing: [] };
         } else {
-          result[key] = "partial";
+          result[key] = { status: "partial", found, missing };
         }
       }
     }
     return result;
-  }, [activePoints, cfgAirports, cfgAirlines]);
+  }, [activePoints, expectedCombos]);
 
   function generateRevenueTemplate() {
     const header = ["Airport", "Airline", "Revenue Line", "Year", ...MONTHS];
@@ -205,8 +208,8 @@ export default function HistoricalsPage() {
     return <div className="flex items-center justify-center h-64"><div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" /></div>;
   }
 
-  const totalTraffic = trafficPoints.length;
-  const totalRevenue = revenuePoints.length;
+  const totalTraffic = new Set(trafficPoints.map(p => `${p.airport_code}:${p.airline_code}:${p.year}:${p.month}`)).size;
+  const totalRevenue = new Set(revenuePoints.map(p => `${p.airport_code}:${p.airline_code}:${p.year}:${p.month}`)).size;
 
   return (
     <div className="p-6">
@@ -291,17 +294,25 @@ export default function HistoricalsPage() {
                   <td className="px-4 py-2.5 sticky left-0 bg-white z-10">
                     <span className="font-bold text-gray-900 font-mono">{year}</span>
                   </td>
-                  {MONTHS.map((_, mIdx) => {
-                    const status = monthCoverage[`${year}-${mIdx + 1}`] || "none";
+                  {MONTHS.map((m, mIdx) => {
+                    const info = monthCoverage[`${year}-${mIdx + 1}`];
+                    const status = info?.status || "none";
+                    const tooltip = status === "partial"
+                      ? `Missing: ${info!.missing.map(c => c.replace(":", " → ")).join(", ")}`
+                      : status === "full"
+                      ? `${info!.found.size} of ${expectedCombos.size} combos uploaded`
+                      : "No data";
                     return (
                       <td key={mIdx} className="px-2 py-2.5 text-center">
-                        {status === "full" ? (
-                          <CheckCircle2 size={16} className="text-emerald-500 mx-auto" />
-                        ) : status === "partial" ? (
-                          <AlertCircle size={16} className="text-amber-500 mx-auto" />
-                        ) : (
-                          <MinusCircle size={16} className="text-gray-200 mx-auto" />
-                        )}
+                        <span title={`${m} ${year}: ${tooltip}`} className="cursor-default">
+                          {status === "full" ? (
+                            <CheckCircle2 size={16} className="text-emerald-500 mx-auto" />
+                          ) : status === "partial" ? (
+                            <AlertCircle size={16} className="text-amber-500 mx-auto" />
+                          ) : (
+                            <MinusCircle size={16} className="text-gray-200 mx-auto" />
+                          )}
+                        </span>
                       </td>
                     );
                   })}
