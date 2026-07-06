@@ -209,6 +209,63 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Monthly Revenue Chart */}
+      {/* Revenue per Pax trend line */}
+      {(() => {
+        const monthlyPax = MONTHS.map((_, i) => filteredTraffic.filter(d => d.year === selectedYear && d.month === i + 1 && d.metric_name === "Total Passengers").reduce((s, d) => s + Number(d.value), 0));
+        const monthlyRpp = MONTHS.map((_, i) => monthlyPax[i] > 0 ? monthlyRevenue[i] / monthlyPax[i] : 0);
+        const maxRpp = Math.max(...monthlyRpp.filter(v => v > 0), 1);
+        const minRpp = Math.min(...monthlyRpp.filter(v => v > 0), 0);
+        const range = maxRpp - minRpp || 1;
+        const hasData = monthlyRpp.some(v => v > 0);
+
+        if (!hasData) return null;
+
+        const points = monthlyRpp.map((v, i) => {
+          const x = 40 + (i / 11) * 720;
+          const y = v > 0 ? 120 - ((v - minRpp) / range) * 100 : 120;
+          return { x, y, val: v };
+        }).filter(p => p.val > 0);
+
+        const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ");
+
+        return (
+          <div className="bg-white rounded-xl border border-gray-200 p-6 mb-4 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold text-gray-900">Revenue per Passenger — {selectedYear}</h2>
+              <span className="text-xs text-gray-400 font-mono">
+                avg {convert(monthlyRpp.filter(v => v > 0).reduce((a, b) => a + b, 0) / monthlyRpp.filter(v => v > 0).length || 0, "USD").toFixed(0)}
+              </span>
+            </div>
+            <svg viewBox="0 0 800 140" className="w-full h-28">
+              <defs>
+                <linearGradient id="rppGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.15" />
+                  <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              {points.length > 1 && (
+                <>
+                  <path d={`${linePath} L${points[points.length - 1].x},130 L${points[0].x},130 Z`} fill="url(#rppGrad)" />
+                  <path d={linePath} fill="none" stroke="#8b5cf6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="animate-[drawLine_1.5s_ease-out]" />
+                </>
+              )}
+              {points.map((p, i) => (
+                <g key={i}>
+                  <circle cx={p.x} cy={p.y} r="4" fill="white" stroke="#8b5cf6" strokeWidth="2" />
+                  <text x={p.x} y={p.y - 10} textAnchor="middle" className="fill-gray-500" style={{ fontSize: "9px", fontFamily: "monospace" }}>
+                    {convert(p.val, "USD").toFixed(0)}
+                  </text>
+                </g>
+              ))}
+              {MONTHS.map((m, i) => (
+                <text key={m} x={40 + (i / 11) * 720} y={138} textAnchor="middle" className="fill-gray-400" style={{ fontSize: "9px" }}>{m}</text>
+              ))}
+              <style>{`@keyframes drawLine { from { stroke-dasharray: 2000; stroke-dashoffset: 2000; } to { stroke-dasharray: 2000; stroke-dashoffset: 0; } }`}</style>
+            </svg>
+          </div>
+        );
+      })()}
+
       <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8 shadow-sm">
         <h2 className="text-sm font-semibold text-gray-900 mb-4">Monthly Revenue — {selectedYear}</h2>
         <div className="flex items-end gap-2 h-64">
