@@ -34,6 +34,8 @@ function useCountUp(target: number, duration = 1400) {
 export default function AnalyticsPage() {
   const [revenueData, setRevenueData] = useState<DataValue[]>([]);
   const [trafficData, setTrafficData] = useState<DataValue[]>([]);
+  const [budgetRevData, setBudgetRevData] = useState<DataValue[]>([]);
+  const [budgetTrfData, setBudgetTrfData] = useState<DataValue[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState(2025);
   const [viewMode, setViewMode] = useState<"full" | "ytd">("full");
@@ -61,12 +63,16 @@ export default function AnalyticsPage() {
         return all;
       }
 
-      const [rev, trf] = await Promise.all([
+      const [rev, trf, bRev, bTrf] = await Promise.all([
         fetchAll("select=airport_code,airline_code,metric_name,year,month,value&data_type=eq.revenue"),
         fetchAll("select=airport_code,airline_code,metric_name,year,month,value&data_type=eq.traffic"),
+        fetchAll("select=airport_code,airline_code,metric_name,year,month,value&data_type=eq.budget_revenue"),
+        fetchAll("select=airport_code,airline_code,metric_name,year,month,value&data_type=eq.budget_traffic"),
       ]);
       setRevenueData(rev);
       setTrafficData(trf);
+      setBudgetRevData(bRev);
+      setBudgetTrfData(bTrf);
       setLoading(false);
     }
     load();
@@ -84,6 +90,8 @@ export default function AnalyticsPage() {
 
   const filteredRevenue = useMemo(() => selectedAirport === "ALL" ? revenueData : revenueData.filter(d => d.airport_code === selectedAirport), [revenueData, selectedAirport]);
   const filteredTraffic = useMemo(() => selectedAirport === "ALL" ? trafficData : trafficData.filter(d => d.airport_code === selectedAirport), [trafficData, selectedAirport]);
+  const filteredBudgetRev = useMemo(() => selectedAirport === "ALL" ? budgetRevData : budgetRevData.filter(d => d.airport_code === selectedAirport), [budgetRevData, selectedAirport]);
+  const filteredBudgetTrf = useMemo(() => selectedAirport === "ALL" ? budgetTrfData : budgetTrfData.filter(d => d.airport_code === selectedAirport), [budgetTrfData, selectedAirport]);
 
   const activeMonths = useMemo(() => {
     if (viewMode === "full") return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
@@ -415,6 +423,97 @@ export default function AnalyticsPage() {
             </table>
           </div>
         </div>
+
+        {/* Actual vs Budget */}
+        {(() => {
+          const budRevTotal = filteredBudgetRev.filter(d => d.year === selectedYear && activeMonths.includes(d.month)).reduce((s, d) => s + Number(d.value), 0);
+          const budPax = filteredBudgetTrf.filter(d => d.year === selectedYear && activeMonths.includes(d.month) && d.metric_name === "Total Passengers").reduce((s, d) => s + Number(d.value), 0);
+          const budMov = filteredBudgetTrf.filter(d => d.year === selectedYear && activeMonths.includes(d.month) && d.metric_name === "Total Movements").reduce((s, d) => s + Number(d.value), 0);
+          const budRpp = budPax > 0 ? budRevTotal / budPax : 0;
+          const hasBudget = budRevTotal > 0 || budPax > 0;
+
+          const budgetByLine = revenueByLine.map(line => ({
+            name: line.name,
+            actual: line.revenue,
+            budget: filteredBudgetRev.filter(d => d.year === selectedYear && activeMonths.includes(d.month) && d.metric_name === line.name).reduce((s, d) => s + Number(d.value), 0),
+          }));
+
+          function variance(actual: number, budget: number) {
+            if (budget === 0) return 0;
+            return ((actual - budget) / budget) * 100;
+          }
+
+          return (
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-sm font-semibold text-gray-900">Actual vs Budget — {selectedYear}</h2>
+                <div className="flex items-center gap-1 overflow-x-auto max-w-[300px]">
+                  <button onClick={() => setSelectedAirport("ALL")} className={`px-2.5 py-1 rounded-full text-[10px] font-semibold whitespace-nowrap transition-colors ${selectedAirport === "ALL" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>All</button>
+                  {availableAirports.map(code => (
+                    <button key={code} onClick={() => setSelectedAirport(code)} className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold whitespace-nowrap transition-colors ${selectedAirport === code ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>{code}</button>
+                  ))}
+                </div>
+              </div>
+              {!hasBudget ? (
+                <div className="text-center py-8">
+                  <p className="text-sm text-gray-500 mb-1">No budget data uploaded for {selectedYear}</p>
+                  <p className="text-xs text-gray-400">Upload budget data in Historicals to enable this comparison</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-100">
+                        <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500 uppercase">Metric</th>
+                        <th className="text-right px-3 py-2 text-xs font-semibold text-gray-500 uppercase">Budget</th>
+                        <th className="text-right px-3 py-2 text-xs font-semibold text-gray-500 uppercase">Actual</th>
+                        <th className="text-right px-3 py-2 text-xs font-semibold text-gray-500 uppercase">Variance</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="bg-blue-50/50 border-b border-blue-100">
+                        <td className="px-3 py-2.5 font-bold text-gray-900">Total Passengers</td>
+                        <td className="px-3 py-2.5 text-right text-gray-500 font-mono font-semibold">{(budPax / 1000000).toFixed(1)}m</td>
+                        <td className="px-3 py-2.5 text-right text-gray-900 font-mono font-bold">{(curPax / 1000000).toFixed(1)}m</td>
+                        <td className={`px-3 py-2.5 text-right font-mono font-bold ${variance(curPax, budPax) >= 0 ? "text-emerald-600" : "text-red-500"}`}>{variance(curPax, budPax) >= 0 ? "+" : ""}{variance(curPax, budPax).toFixed(1)}%</td>
+                      </tr>
+                      <tr className="bg-blue-50/50 border-b border-blue-100">
+                        <td className="px-3 py-2.5 font-bold text-gray-900">Total Movements</td>
+                        <td className="px-3 py-2.5 text-right text-gray-500 font-mono font-semibold">{(budMov / 1000).toFixed(0)}k</td>
+                        <td className="px-3 py-2.5 text-right text-gray-900 font-mono font-bold">{(curMov / 1000).toFixed(0)}k</td>
+                        <td className={`px-3 py-2.5 text-right font-mono font-bold ${variance(curMov, budMov) >= 0 ? "text-emerald-600" : "text-red-500"}`}>{variance(curMov, budMov) >= 0 ? "+" : ""}{variance(curMov, budMov).toFixed(1)}%</td>
+                      </tr>
+                      <tr><td colSpan={4} className="py-1"><div className="border-t border-gray-200" /></td></tr>
+                      {budgetByLine.map(line => {
+                        const v = variance(line.actual, line.budget);
+                        return (
+                          <tr key={line.name} className="border-b border-gray-50 hover:bg-gray-50/50">
+                            <td className="px-3 py-2.5 font-medium text-gray-700">{line.name}</td>
+                            <td className="px-3 py-2.5 text-right text-gray-500 font-mono">{Math.round(convert(line.budget, "USD") / 1000000).toLocaleString()}m</td>
+                            <td className="px-3 py-2.5 text-right text-gray-900 font-mono font-semibold">{Math.round(convert(line.actual, "USD") / 1000000).toLocaleString()}m</td>
+                            <td className={`px-3 py-2.5 text-right font-mono font-semibold ${v >= 0 ? "text-emerald-600" : "text-red-500"}`}>{v >= 0 ? "+" : ""}{v.toFixed(1)}%</td>
+                          </tr>
+                        );
+                      })}
+                      <tr className="bg-blue-50/50 border-t-2 border-blue-200">
+                        <td className="px-3 py-2.5 font-bold text-gray-900">Total Revenue</td>
+                        <td className="px-3 py-2.5 text-right text-gray-500 font-mono font-semibold">{Math.round(convert(budRevTotal, "USD") / 1000000).toLocaleString()}m</td>
+                        <td className="px-3 py-2.5 text-right text-gray-900 font-mono font-bold">{Math.round(convert(curRevenue, "USD") / 1000000).toLocaleString()}m</td>
+                        <td className={`px-3 py-2.5 text-right font-mono font-bold ${variance(curRevenue, budRevTotal) >= 0 ? "text-emerald-600" : "text-red-500"}`}>{variance(curRevenue, budRevTotal) >= 0 ? "+" : ""}{variance(curRevenue, budRevTotal).toFixed(1)}%</td>
+                      </tr>
+                      <tr className="bg-blue-50/50 border-t border-blue-200">
+                        <td className="px-3 py-2.5 font-bold text-gray-900">Revenue per Pax</td>
+                        <td className="px-3 py-2.5 text-right text-gray-500 font-mono font-semibold">{convert(budRpp, "USD").toFixed(2)}</td>
+                        <td className="px-3 py-2.5 text-right text-gray-900 font-mono font-bold">{convert(revPerPax, "USD").toFixed(2)}</td>
+                        <td className={`px-3 py-2.5 text-right font-mono font-bold ${variance(revPerPax, budRpp) >= 0 ? "text-emerald-600" : "text-red-500"}`}>{variance(revPerPax, budRpp) >= 0 ? "+" : ""}{variance(revPerPax, budRpp).toFixed(1)}%</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
