@@ -349,6 +349,7 @@ export default function AnalyticsPage() {
           })()}
         </div>
 
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* YoY Comparison */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-5">
@@ -514,6 +515,7 @@ export default function AnalyticsPage() {
             </div>
           );
         })()}
+        </div>
       </div>
     </div>
   );
