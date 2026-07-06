@@ -36,7 +36,7 @@ export default function HistoricalsPage() {
     const cid = compRes.data?.[0]?.id;
     if (cid) setCompanyId(cid);
 
-    const rpcHeaders = { "Content-Type": "application/json", apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}` };
+    const rpcHeaders: Record<string, string> = { "Content-Type": "application/json", apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}`, Range: "0-99999" };
     const rpcUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc`;
 
     const [aRes, alRes, lRes, dRes, htRes, hrRes, tvRes, rvRes] = await Promise.all([
