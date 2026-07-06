@@ -150,6 +150,7 @@ Tailwind classes use the token names directly: `bg-surface`, `text-text-primary`
 ## UI/UX Standards
 
 - **Never expose API sources, third-party service names, or internal infrastructure details** in the UI. Users should never see "Frankfurter API", "Supabase", "Google Maps API key", etc. Keep all sources invisible — just show the output.
+- **No currency symbols next to values** — the base currency is shown in the top nav bar, so all numbers on the page are understood to be in that currency. Use lowercase suffixes: `m` for millions, `k` for thousands (never uppercase M or K).
 - **Visual quality is paramount.** Every component must feel like a Bloomberg Terminal / Google Earth / premium command center. No shortcuts on visuals.
 - **Use flags, icons, and visual indicators** wherever possible — country flags for currencies, pulsing dots for statuses, color-coded badges for categories.
 - **Dropdowns must be custom components** with search, flags, and visual hierarchy — never plain HTML `<select>` elements.

@@ -169,10 +169,16 @@ export default function AnalyticsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex rounded-lg border border-gray-200 overflow-hidden">
-            <button onClick={() => setViewMode("full")} className={`px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === "full" ? "bg-blue-50 text-blue-700" : "text-gray-500 hover:bg-gray-50"}`}>Full Year</button>
-            <button onClick={() => setViewMode("ytd")} className={`px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === "ytd" ? "bg-blue-50 text-blue-700" : "text-gray-500 hover:bg-gray-50"}`}>YTD</button>
-          </div>
+          <button
+            onClick={() => setViewMode(viewMode === "full" ? "ytd" : "full")}
+            className="flex items-center gap-2 cursor-pointer"
+          >
+            <span className={`text-xs font-medium ${viewMode === "ytd" ? "text-gray-900" : "text-gray-400"}`}>YTD</span>
+            <div className={`w-10 h-5.5 rounded-full p-0.5 transition-colors duration-200 ${viewMode === "full" ? "bg-emerald-500" : "bg-gray-300"}`}>
+              <div className={`w-4.5 h-4.5 bg-white rounded-full shadow transition-transform duration-200 ${viewMode === "full" ? "translate-x-[18px]" : "translate-x-0"}`} />
+            </div>
+            <span className={`text-xs font-medium ${viewMode === "full" ? "text-gray-900" : "text-gray-400"}`}>Full Year</span>
+          </button>
           <select value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))} className="px-3 py-1.5 rounded-lg text-sm border border-gray-200 bg-white text-gray-900 outline-none">
             {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
           </select>
@@ -181,10 +187,10 @@ export default function AnalyticsPage() {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <MetricCard label="Total Passengers" value={paxCounter.value} suffix="M" growth={paxGrowth} counterRef={paxCounter.ref} />
-        <MetricCard label="Aircraft Movements" value={movCounter.value} suffix="K" growth={movGrowth} counterRef={movCounter.ref} />
-        <MetricCard label="Total Revenue" value={revCounter.value} suffix={`M ${symbol !== "$" ? symbol : ""}`} growth={revGrowth} counterRef={revCounter.ref} />
-        <MetricCard label="Revenue per Pax" value={rppCounter.value / 100} suffix={` ${symbol !== "$" ? symbol : ""}`} growth={rppGrowth} counterRef={rppCounter.ref} />
+        <MetricCard label="Total Passengers" value={paxCounter.value} suffix="m" growth={paxGrowth} counterRef={paxCounter.ref} />
+        <MetricCard label="Aircraft Movements" value={movCounter.value} suffix="k" growth={movGrowth} counterRef={movCounter.ref} />
+        <MetricCard label="Total Revenue" value={revCounter.value} suffix="m" growth={revGrowth} counterRef={revCounter.ref} />
+        <MetricCard label="Revenue per Pax" value={rppCounter.value / 100} suffix="" growth={rppGrowth} counterRef={rppCounter.ref} />
       </div>
 
       {/* Monthly Revenue Chart */}
@@ -202,7 +208,7 @@ export default function AnalyticsPage() {
             return (
               <div key={m} className={`flex-1 flex flex-col items-center group relative h-full ${!isInScope && viewMode === "ytd" ? "opacity-30" : ""}`}>
                 <div className="w-full flex-1 flex flex-col items-center justify-end overflow-hidden">
-                  <span className="text-[9px] text-gray-500 font-mono mb-1 shrink-0">{symbol}{Math.round(convert(val, "USD") / 1000000)}M</span>
+                  <span className="text-[9px] text-gray-500 font-mono mb-1 shrink-0">{Math.round(convert(val, "USD") / 1000000)}m</span>
                   {val > 0 ? (
                     <div
                       className="w-full rounded-t-md bg-blue-500 hover:bg-blue-600 transition-colors duration-300 cursor-pointer animate-[growUp_0.8s_ease-out_forwards]"
@@ -217,7 +223,7 @@ export default function AnalyticsPage() {
                 {val > 0 && (
                   <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-20">
                     <div className="bg-gray-900 text-white rounded-lg px-3 py-2 text-[10px] whitespace-nowrap shadow-xl">
-                      <p className="font-bold mb-1">{m} {selectedYear}: {symbol}{Math.round(convert(val, "USD") / 1000000).toLocaleString()}M</p>
+                      <p className="font-bold mb-1">{m} {selectedYear}: {Math.round(convert(val, "USD") / 1000000).toLocaleString()}m</p>
                       {prevVal > 0 && (
                         <p className={yoyDelta >= 0 ? "text-emerald-400" : "text-red-400"}>
                           vs {selectedYear - 1}: {yoyDelta >= 0 ? "+" : ""}{yoyDelta.toFixed(1)}%
@@ -248,7 +254,7 @@ export default function AnalyticsPage() {
                   <div key={line.name}>
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-sm text-gray-700 font-medium">{line.name}</span>
-                      <span className="text-sm text-gray-500 font-mono">{symbol}{Math.round(convert(line.revenue, "USD") / 1000000).toLocaleString()}M</span>
+                      <span className="text-sm text-gray-500 font-mono">{Math.round(convert(line.revenue, "USD") / 1000000).toLocaleString()}m</span>
                     </div>
                     <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                       <div className="h-full rounded-full transition-all duration-1000 ease-out" style={{ width: `${pct}%`, backgroundColor: lineColors[i % lineColors.length] }} />
@@ -277,8 +283,8 @@ export default function AnalyticsPage() {
               <tbody>
                 {/* Traffic metrics */}
                 {[
-                  { name: "Total Passengers", prev: prevPax, cur: curPax, fmt: (v: number) => `${(v / 1000000).toFixed(1)}M` },
-                  { name: "Total Movements", prev: prevMov, cur: curMov, fmt: (v: number) => `${(v / 1000).toFixed(0)}K` },
+                  { name: "Total Passengers", prev: prevPax, cur: curPax, fmt: (v: number) => `${(v / 1000000).toFixed(1)}m` },
+                  { name: "Total Movements", prev: prevMov, cur: curMov, fmt: (v: number) => `${(v / 1000).toFixed(0)}k` },
                 ].map(row => {
                   const delta = row.prev > 0 ? ((row.cur - row.prev) / row.prev) * 100 : 0;
                   return (
@@ -301,8 +307,8 @@ export default function AnalyticsPage() {
                   return (
                     <tr key={line.name} className="border-b border-gray-50 hover:bg-gray-50/50">
                       <td className="px-3 py-2.5 font-medium text-gray-700">{line.name}</td>
-                      <td className="px-3 py-2.5 text-right text-gray-500 font-mono">{symbol}{Math.round(convert(prevLineRev, "USD") / 1000000).toLocaleString()}M</td>
-                      <td className="px-3 py-2.5 text-right text-gray-900 font-mono font-semibold">{symbol}{Math.round(convert(line.revenue, "USD") / 1000000).toLocaleString()}M</td>
+                      <td className="px-3 py-2.5 text-right text-gray-500 font-mono">{Math.round(convert(prevLineRev, "USD") / 1000000).toLocaleString()}m</td>
+                      <td className="px-3 py-2.5 text-right text-gray-900 font-mono font-semibold">{Math.round(convert(line.revenue, "USD") / 1000000).toLocaleString()}m</td>
                       <td className={`px-3 py-2.5 text-right font-mono font-semibold ${delta >= 0 ? "text-emerald-600" : "text-red-500"}`}>{delta >= 0 ? "+" : ""}{delta.toFixed(1)}%</td>
                     </tr>
                   );
@@ -311,16 +317,16 @@ export default function AnalyticsPage() {
                 {/* Total Revenue - highlighted */}
                 <tr className="bg-blue-50/50 border-t-2 border-blue-200">
                   <td className="px-3 py-2.5 font-bold text-gray-900">Total Revenue</td>
-                  <td className="px-3 py-2.5 text-right text-gray-500 font-mono font-semibold">{symbol}{Math.round(convert(prevRevenue, "USD") / 1000000).toLocaleString()}M</td>
-                  <td className="px-3 py-2.5 text-right text-gray-900 font-mono font-bold">{symbol}{Math.round(convert(curRevenue, "USD") / 1000000).toLocaleString()}M</td>
+                  <td className="px-3 py-2.5 text-right text-gray-500 font-mono font-semibold">{Math.round(convert(prevRevenue, "USD") / 1000000).toLocaleString()}m</td>
+                  <td className="px-3 py-2.5 text-right text-gray-900 font-mono font-bold">{Math.round(convert(curRevenue, "USD") / 1000000).toLocaleString()}m</td>
                   <td className={`px-3 py-2.5 text-right font-mono font-bold ${revGrowth >= 0 ? "text-emerald-600" : "text-red-500"}`}>{revGrowth >= 0 ? "+" : ""}{revGrowth.toFixed(1)}%</td>
                 </tr>
 
                 {/* Revenue per Pax */}
                 <tr className="bg-blue-50/50 border-t border-blue-200">
                   <td className="px-3 py-2.5 font-bold text-gray-900">Revenue per Pax</td>
-                  <td className="px-3 py-2.5 text-right text-gray-500 font-mono font-semibold">{symbol}{convert(prevRevPerPax, "USD").toFixed(2)}</td>
-                  <td className="px-3 py-2.5 text-right text-gray-900 font-mono font-bold">{symbol}{convert(revPerPax, "USD").toFixed(2)}</td>
+                  <td className="px-3 py-2.5 text-right text-gray-500 font-mono font-semibold">{convert(prevRevPerPax, "USD").toFixed(2)}</td>
+                  <td className="px-3 py-2.5 text-right text-gray-900 font-mono font-bold">{convert(revPerPax, "USD").toFixed(2)}</td>
                   <td className={`px-3 py-2.5 text-right font-mono font-bold ${rppGrowth >= 0 ? "text-emerald-600" : "text-red-500"}`}>{rppGrowth >= 0 ? "+" : ""}{rppGrowth.toFixed(1)}%</td>
                 </tr>
               </tbody>
