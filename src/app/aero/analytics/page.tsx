@@ -457,8 +457,8 @@ export default function AnalyticsPage() {
               </div>
               {!hasBudget ? (
                 <div className="text-center py-8">
-                  <p className="text-sm text-gray-500 mb-1">No budget data uploaded for {selectedYear}</p>
-                  <p className="text-xs text-gray-400">Upload budget data in Historicals to enable this comparison</p>
+                  <p className="text-sm text-gray-500 mb-1">No budget available for {selectedYear}</p>
+                  <p className="text-xs text-gray-400">Prepare your budget in the Budget tab to enable this comparison</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
