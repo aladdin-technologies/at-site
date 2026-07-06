@@ -37,18 +37,17 @@ export default function HistoricalsPage() {
     if (cid) setCompanyId(cid);
 
     const rpcHeaders = { "Content-Type": "application/json", apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}` };
-    const rpcUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc/get_coverage_summary`;
-    const dataUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/historical_data?select=airport_code,airline_code,metric_name,year,month,value&order=year,month,airport_code,airline_code`;
+    const rpcUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc`;
 
     const [aRes, alRes, lRes, dRes, htRes, hrRes, tvRes, rvRes] = await Promise.all([
       supabase.from("forecast_airports").select("id, code, name").order("code"),
       supabase.from("forecast_airlines").select("id, code, name, applicable_airports").order("code"),
       supabase.from("forecast_charge_types").select("id, name, applicable_airports, driver_id").order("sort_order"),
       supabase.from("forecast_drivers").select("id, name, unit").order("name"),
-      fetch(rpcUrl, { method: "POST", headers: rpcHeaders, body: JSON.stringify({ p_type: "traffic" }) }).then(r => r.json()).then(data => ({ data })).catch(() => ({ data: [] })),
-      fetch(rpcUrl, { method: "POST", headers: rpcHeaders, body: JSON.stringify({ p_type: "revenue" }) }).then(r => r.json()).then(data => ({ data })).catch(() => ({ data: [] })),
-      fetch(`${dataUrl}&data_type=eq.traffic`, { headers: rpcHeaders }).then(r => r.json()).catch(() => []),
-      fetch(`${dataUrl}&data_type=eq.revenue`, { headers: rpcHeaders }).then(r => r.json()).catch(() => []),
+      fetch(`${rpcUrl}/get_coverage_summary`, { method: "POST", headers: rpcHeaders, body: JSON.stringify({ p_type: "traffic" }) }).then(r => r.json()).then(data => ({ data })).catch(() => ({ data: [] })),
+      fetch(`${rpcUrl}/get_coverage_summary`, { method: "POST", headers: rpcHeaders, body: JSON.stringify({ p_type: "revenue" }) }).then(r => r.json()).then(data => ({ data })).catch(() => ({ data: [] })),
+      fetch(`${rpcUrl}/get_historical_data`, { method: "POST", headers: rpcHeaders, body: JSON.stringify({ p_type: "traffic" }) }).then(r => r.json()).catch(() => []),
+      fetch(`${rpcUrl}/get_historical_data`, { method: "POST", headers: rpcHeaders, body: JSON.stringify({ p_type: "revenue" }) }).then(r => r.json()).catch(() => []),
     ]);
     setCfgAirports((aRes.data ?? []) as CfgAirport[]);
     setCfgAirlines((alRes.data ?? []) as CfgAirline[]);
