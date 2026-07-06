@@ -45,7 +45,7 @@ export default function HistoricalsPage() {
       let from = 0;
       const batch = 1000;
       while (true) {
-        const res = await fetch(`${restUrl}/${table}?${filter}&order=year,month&offset=${from}&limit=${batch}`, { headers: baseHeaders });
+        const res = await fetch(`${restUrl}/${table}?${filter}&order=year,month,airport_code,airline_code,metric_name&offset=${from}&limit=${batch}`, { headers: baseHeaders });
         const data = await res.json();
         if (!Array.isArray(data) || data.length === 0) break;
         all.push(...data);
