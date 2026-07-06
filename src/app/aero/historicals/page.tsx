@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { supabase } from "@/lib/supabase";
-import { Download, Upload, CheckCircle2, AlertCircle, MinusCircle } from "lucide-react";
+import { Download, Upload, CheckCircle2, AlertCircle, MinusCircle, Loader2 } from "lucide-react";
 
 interface CfgAirport { id: string; code: string; name: string; }
 interface CfgAirline { id: string; code: string; name: string; applicable_airports: string[] | null; }
@@ -22,37 +22,37 @@ export default function HistoricalsPage() {
   const [trafficPoints, setTrafficPoints] = useState<DataPoint[]>([]);
   const [revenuePoints, setRevenuePoints] = useState<DataPoint[]>([]);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [uploadResult, setUploadResult] = useState<{ type: string; count: number; error?: string } | null>(null);
   const [viewMode, setViewMode] = useState<"revenue" | "traffic">("traffic");
+  const [companyId, setCompanyId] = useState<string | null>(null);
+  const revenueFileRef = useRef<HTMLInputElement>(null);
+  const trafficFileRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    async function load() {
-      const [aRes, alRes, lRes, dRes, tRes, rRes] = await Promise.all([
-        supabase.from("forecast_airports").select("id, code, name").order("code"),
-        supabase.from("forecast_airlines").select("id, code, name, applicable_airports").order("code"),
-        supabase.from("forecast_charge_types").select("id, name, applicable_airports, driver_id").order("sort_order"),
-        supabase.from("forecast_drivers").select("id, name, unit").order("name"),
-        supabase.from("forecast_traffic").select("year, month, forecast_airlines(code), forecast_airports(code)"),
-        supabase.from("forecast_revenue").select("year, month, forecast_airlines(code), forecast_airports(code)").limit(5000),
-      ]);
-      setCfgAirports((aRes.data ?? []) as CfgAirport[]);
-      setCfgAirlines((alRes.data ?? []) as CfgAirline[]);
-      setCfgLines((lRes.data ?? []) as CfgLine[]);
-      setCfgDrivers((dRes.data ?? []) as CfgDriver[]);
+  async function loadData() {
+    const compRes = await supabase.from("forecast_companies").select("id").limit(1);
+    const cid = compRes.data?.[0]?.id;
+    if (cid) setCompanyId(cid);
 
-      setTrafficPoints((tRes.data ?? []).map((t: any) => ({
-        year: t.year, month: t.month,
-        airport_code: t.forecast_airports?.code || "",
-        airline_code: t.forecast_airlines?.code || "",
-      })));
-      setRevenuePoints((rRes.data ?? []).map((r: any) => ({
-        year: r.year, month: r.month,
-        airport_code: r.forecast_airports?.code || "",
-        airline_code: r.forecast_airlines?.code || "",
-      })));
-      setLoading(false);
-    }
-    load();
-  }, []);
+    const [aRes, alRes, lRes, dRes, hRes] = await Promise.all([
+      supabase.from("forecast_airports").select("id, code, name").order("code"),
+      supabase.from("forecast_airlines").select("id, code, name, applicable_airports").order("code"),
+      supabase.from("forecast_charge_types").select("id, name, applicable_airports, driver_id").order("sort_order"),
+      supabase.from("forecast_drivers").select("id, name, unit").order("name"),
+      supabase.from("historical_data").select("data_type, airport_code, airline_code, year, month").limit(10000),
+    ]);
+    setCfgAirports((aRes.data ?? []) as CfgAirport[]);
+    setCfgAirlines((alRes.data ?? []) as CfgAirline[]);
+    setCfgLines((lRes.data ?? []) as CfgLine[]);
+    setCfgDrivers((dRes.data ?? []) as CfgDriver[]);
+
+    const hist = (hRes.data ?? []) as any[];
+    setTrafficPoints(hist.filter(h => h.data_type === "traffic").map(h => ({ year: h.year, month: h.month, airport_code: h.airport_code, airline_code: h.airline_code })));
+    setRevenuePoints(hist.filter(h => h.data_type === "revenue").map(h => ({ year: h.year, month: h.month, airport_code: h.airport_code, airline_code: h.airline_code })));
+    setLoading(false);
+  }
+
+  useEffect(() => { loadData(); }, []);
 
   const activePoints = viewMode === "traffic" ? trafficPoints : revenuePoints;
 
@@ -122,6 +122,77 @@ export default function HistoricalsPage() {
     return rows.join("\n");
   }
 
+  async function handleFileUpload(file: File, dataType: "revenue" | "traffic") {
+    setUploading(true);
+    setUploadResult(null);
+    try {
+      const text = await file.text();
+      const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+      if (lines.length < 2) { setUploadResult({ type: dataType, count: 0, error: "File is empty or has no data rows" }); setUploading(false); return; }
+
+      const header = lines[0].split(",").map(h => h.replace(/"/g, "").trim());
+      const monthIndices: Record<number, number> = {};
+      MONTHS.forEach((m, i) => {
+        const idx = header.findIndex(h => h.toLowerCase() === m.toLowerCase());
+        if (idx >= 0) monthIndices[i + 1] = idx;
+      });
+
+      const airportIdx = header.findIndex(h => h.toLowerCase() === "airport");
+      const airlineIdx = header.findIndex(h => h.toLowerCase() === "airline");
+      const metricIdx = header.findIndex(h => h.toLowerCase() === "metric" || h.toLowerCase() === "revenue line" || h.toLowerCase() === "driver");
+      const yearIdx = header.findIndex(h => h.toLowerCase() === "year");
+
+      if (airportIdx < 0 || airlineIdx < 0 || metricIdx < 0) {
+        setUploadResult({ type: dataType, count: 0, error: "Missing required columns: Airport, Airline, Metric/Revenue Line" });
+        setUploading(false); return;
+      }
+
+      const rows: any[] = [];
+      for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(",").map(c => c.replace(/"/g, "").trim());
+        const airport = cols[airportIdx];
+        const airline = cols[airlineIdx];
+        const metric = cols[metricIdx];
+        const year = yearIdx >= 0 ? parseInt(cols[yearIdx]) : 0;
+        if (!airport || !airline || !metric) continue;
+
+        for (const [month, colIdx] of Object.entries(monthIndices)) {
+          const val = parseFloat(cols[Number(colIdx)]);
+          if (!isNaN(val) && val !== 0) {
+            rows.push({
+              company_id: companyId,
+              data_type: dataType,
+              airport_code: airport,
+              airline_code: airline,
+              metric_name: metric,
+              year: year || 2025,
+              month: parseInt(month),
+              value: val,
+            });
+          }
+        }
+      }
+
+      if (rows.length === 0) {
+        setUploadResult({ type: dataType, count: 0, error: "No data values found in the file. Make sure month columns have numbers." });
+        setUploading(false); return;
+      }
+
+      const batchSize = 500;
+      for (let i = 0; i < rows.length; i += batchSize) {
+        const batch = rows.slice(i, i + batchSize);
+        const { error } = await supabase.from("historical_data").insert(batch);
+        if (error) { setUploadResult({ type: dataType, count: i, error: error.message }); setUploading(false); return; }
+      }
+
+      setUploadResult({ type: dataType, count: rows.length });
+      await loadData();
+    } catch (err: any) {
+      setUploadResult({ type: dataType, count: 0, error: err.message || "Failed to process file" });
+    }
+    setUploading(false);
+  }
+
   function downloadCSV(content: string, filename: string) {
     const blob = new Blob([content], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -157,13 +228,26 @@ export default function HistoricalsPage() {
           <button onClick={() => downloadCSV(generateTrafficTemplate(), "traffic_template.csv")} disabled={cfgAirports.length === 0} className="flex flex-col items-center gap-1.5 px-3 py-3 rounded-lg border border-gray-200 text-xs font-medium text-gray-700 hover:bg-gray-50 hover:border-blue-200 transition-colors disabled:opacity-40">
             <Download size={16} className="text-purple-500" /> Traffic Template
           </button>
-          <button className="flex flex-col items-center gap-1.5 px-3 py-3 rounded-lg border border-blue-200 bg-blue-50 text-xs font-medium text-blue-700 hover:bg-blue-100 transition-colors">
-            <Upload size={16} className="text-blue-600" /> Upload Revenue Data
+          <button onClick={() => revenueFileRef.current?.click()} disabled={uploading} className="flex flex-col items-center gap-1.5 px-3 py-3 rounded-lg border border-blue-200 bg-blue-50 text-xs font-medium text-blue-700 hover:bg-blue-100 transition-colors disabled:opacity-50">
+            {uploading ? <Loader2 size={16} className="text-blue-600 animate-spin" /> : <Upload size={16} className="text-blue-600" />}
+            Upload Revenue Data
           </button>
-          <button className="flex flex-col items-center gap-1.5 px-3 py-3 rounded-lg border border-purple-200 bg-purple-50 text-xs font-medium text-purple-700 hover:bg-purple-100 transition-colors">
-            <Upload size={16} className="text-purple-600" /> Upload Traffic Data
+          <button onClick={() => trafficFileRef.current?.click()} disabled={uploading} className="flex flex-col items-center gap-1.5 px-3 py-3 rounded-lg border border-purple-200 bg-purple-50 text-xs font-medium text-purple-700 hover:bg-purple-100 transition-colors disabled:opacity-50">
+            {uploading ? <Loader2 size={16} className="text-purple-600 animate-spin" /> : <Upload size={16} className="text-purple-600" />}
+            Upload Traffic Data
           </button>
+          <input ref={revenueFileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleFileUpload(f, "revenue"); e.target.value = ""; }} />
+          <input ref={trafficFileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleFileUpload(f, "traffic"); e.target.value = ""; }} />
         </div>
+        {uploadResult && (
+          <div className={`mt-3 px-4 py-2.5 rounded-lg text-xs font-medium ${uploadResult.error ? "bg-red-50 text-red-700 border border-red-200" : "bg-emerald-50 text-emerald-700 border border-emerald-200"}`}>
+            {uploadResult.error
+              ? `Upload failed: ${uploadResult.error}`
+              : `Successfully uploaded ${uploadResult.count.toLocaleString()} ${uploadResult.type} data points`
+            }
+            <button onClick={() => setUploadResult(null)} className="ml-3 underline">Dismiss</button>
+          </div>
+        )}
       </div>
 
       {/* Data Coverage */}
