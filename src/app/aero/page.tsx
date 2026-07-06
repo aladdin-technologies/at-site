@@ -196,7 +196,7 @@ export default function ForecastDashboard() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
           <KPI label="Total Passengers" value={totalPax} suffix="" color="#3b82f6" />
           <KPI label="Aircraft Movements" value={totalMovements} suffix="" color="#8b5cf6" />
-          <KPI label="Total Revenue" value={Math.round(convert(totalRevenue, "USD") / 1000000)} prefix={symbol} suffix="M" color="#10b981" />
+          <KPI label="Total Revenue" value={Math.round(convert(totalRevenue, "USD") / 1000000)} prefix="" suffix="m" color="#10b981" />
           <KPI label="Revenue Lines" value={6} suffix="" color="#f59e0b" />
         </div>
 
@@ -230,7 +230,7 @@ export default function ForecastDashboard() {
               return (
                 <div key={m} className="flex-1 flex flex-col items-center group relative h-full">
                   <div className="w-full flex-1 flex flex-col items-center justify-end overflow-hidden">
-                    <span className="text-[9px] text-gray-500 font-mono mb-1 shrink-0">{symbol}{Math.round(convert(val, "USD") / 1000000)}M</span>
+                    <span className="text-[9px] text-gray-500 font-mono mb-1 shrink-0">{Math.round(convert(val, "USD") / 1000000)}m</span>
                     <div
                       className="w-full rounded-t-md bg-blue-500 hover:bg-blue-600 transition-colors duration-300 cursor-pointer animate-[growUp_0.8s_ease-out_forwards]"
                       style={{ height: `${pct}%`, minHeight: 4, animationDelay: `${i * 80}ms`, opacity: 0 }}
@@ -285,7 +285,7 @@ export default function ForecastDashboard() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-gray-900 font-mono">{symbol}{Math.round(convert(apt.revenue, "USD") / 1000000).toLocaleString()}M</p>
+                  <p className="font-bold text-gray-900 font-mono">{Math.round(convert(apt.revenue, "USD") / 1000000).toLocaleString()}m</p>
                   <p className="text-xs text-gray-500">Total revenue</p>
                 </div>
               </div>

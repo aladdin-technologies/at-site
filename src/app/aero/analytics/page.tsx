@@ -40,6 +40,7 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState(2025);
   const [viewMode, setViewMode] = useState<"full" | "ytd">("full");
+  const [selectedAirport, setSelectedAirport] = useState("ALL");
   const { convert, symbol } = useAeroCurrencyConverter();
   const { actualMonths } = useActualMonths();
 
@@ -78,17 +79,25 @@ export default function AnalyticsPage() {
     return [...yrs].sort((a, b) => b - a);
   }, [revenueData, trafficData]);
 
+  const availableAirports = useMemo(() => {
+    const codes = new Set([...revenueData.map(d => d.airport_code), ...trafficData.map(d => d.airport_code)]);
+    return [...codes].sort();
+  }, [revenueData, trafficData]);
+
+  const filteredRevenue = useMemo(() => selectedAirport === "ALL" ? revenueData : revenueData.filter(d => d.airport_code === selectedAirport), [revenueData, selectedAirport]);
+  const filteredTraffic = useMemo(() => selectedAirport === "ALL" ? trafficData : trafficData.filter(d => d.airport_code === selectedAirport), [trafficData, selectedAirport]);
+
   const activeMonths = useMemo(() => {
     if (viewMode === "full") return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
     return [...actualMonths].sort((a, b) => a - b);
   }, [viewMode, actualMonths]);
 
   function sumRevenue(year: number, months: number[]): number {
-    return revenueData.filter(d => d.year === year && months.includes(d.month)).reduce((s, d) => s + Number(d.value), 0);
+    return filteredRevenue.filter(d => d.year === year && months.includes(d.month)).reduce((s, d) => s + Number(d.value), 0);
   }
 
   function sumTraffic(year: number, months: number[], metric: string): number {
-    return trafficData.filter(d => d.year === year && months.includes(d.month) && d.metric_name === metric).reduce((s, d) => s + Number(d.value), 0);
+    return filteredTraffic.filter(d => d.year === year && months.includes(d.month) && d.metric_name === metric).reduce((s, d) => s + Number(d.value), 0);
   }
 
   const curRevenue = sumRevenue(selectedYear, activeMonths);
@@ -115,28 +124,28 @@ export default function AnalyticsPage() {
   const monthlyRevenue = useMemo(() => {
     return MONTHS.map((_, i) => {
       const m = i + 1;
-      return revenueData.filter(d => d.year === selectedYear && d.month === m).reduce((s, d) => s + Number(d.value), 0);
+      return filteredRevenue.filter(d => d.year === selectedYear && d.month === m).reduce((s, d) => s + Number(d.value), 0);
     });
-  }, [revenueData, selectedYear]);
+  }, [filteredRevenue, selectedYear]);
 
   const prevMonthlyRevenue = useMemo(() => {
     return MONTHS.map((_, i) => {
       const m = i + 1;
-      return revenueData.filter(d => d.year === selectedYear - 1 && d.month === m).reduce((s, d) => s + Number(d.value), 0);
+      return filteredRevenue.filter(d => d.year === selectedYear - 1 && d.month === m).reduce((s, d) => s + Number(d.value), 0);
     });
-  }, [revenueData, selectedYear]);
+  }, [filteredRevenue, selectedYear]);
 
   const maxMonthly = Math.max(...monthlyRevenue, 1);
 
   const revenueByLine = useMemo(() => {
     const byLine: Record<string, number> = {};
-    for (const d of revenueData) {
+    for (const d of filteredRevenue) {
       if (d.year === selectedYear && activeMonths.includes(d.month)) {
         byLine[d.metric_name] = (byLine[d.metric_name] || 0) + Number(d.value);
       }
     }
     return Object.entries(byLine).map(([name, revenue]) => ({ name, revenue })).sort((a, b) => b.revenue - a.revenue);
-  }, [revenueData, selectedYear, activeMonths]);
+  }, [filteredRevenue, selectedYear, activeMonths]);
 
   const totalLineRev = revenueByLine.reduce((s, l) => s + l.revenue, 0);
   const lineColors = ["#3b82f6", "#8b5cf6", "#10b981", "#f59e0b", "#ef4444", "#06b6d4"];
@@ -269,7 +278,15 @@ export default function AnalyticsPage() {
 
         {/* YoY Comparison */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-          <h2 className="text-sm font-semibold text-gray-900 mb-5">Year-over-Year</h2>
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-sm font-semibold text-gray-900">Year-over-Year</h2>
+            <div className="flex items-center gap-1 overflow-x-auto max-w-[300px]">
+              <button onClick={() => setSelectedAirport("ALL")} className={`px-2.5 py-1 rounded-full text-[10px] font-semibold whitespace-nowrap transition-colors ${selectedAirport === "ALL" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>All</button>
+              {availableAirports.map(code => (
+                <button key={code} onClick={() => setSelectedAirport(code)} className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold whitespace-nowrap transition-colors ${selectedAirport === code ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>{code}</button>
+              ))}
+            </div>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -302,7 +319,7 @@ export default function AnalyticsPage() {
 
                 {/* Revenue lines in descending order */}
                 {revenueByLine.map(line => {
-                  const prevLineRev = revenueData.filter(d => d.year === selectedYear - 1 && activeMonths.includes(d.month) && d.metric_name === line.name).reduce((s, d) => s + Number(d.value), 0);
+                  const prevLineRev = filteredRevenue.filter(d => d.year === selectedYear - 1 && activeMonths.includes(d.month) && d.metric_name === line.name).reduce((s, d) => s + Number(d.value), 0);
                   const delta = prevLineRev > 0 ? ((line.revenue - prevLineRev) / prevLineRev) * 100 : 0;
                   return (
                     <tr key={line.name} className="border-b border-gray-50 hover:bg-gray-50/50">
