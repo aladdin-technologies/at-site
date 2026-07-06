@@ -13,23 +13,20 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 function useCountUp(target: number, duration = 1400) {
   const [value, setValue] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
+  const animated = useRef(false);
   useEffect(() => {
-    if (!target) return;
-    const el = ref.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(([entry]) => {
-      if (!entry.isIntersecting) return;
-      observer.disconnect();
-      const start = performance.now();
-      function tick(now: number) {
-        const t = Math.min((now - start) / duration, 1);
-        setValue(Math.round(target * (1 - Math.pow(1 - t, 3))));
-        if (t < 1) requestAnimationFrame(tick);
-      }
-      requestAnimationFrame(tick);
-    }, { threshold: 0.3 });
-    observer.observe(el);
-    return () => observer.disconnect();
+    if (!target) { setValue(0); return; }
+    if (animated.current && value === target) return;
+    const start = performance.now();
+    const from = animated.current ? value : 0;
+    animated.current = true;
+    function tick(now: number) {
+      const t = Math.min((now - start) / duration, 1);
+      const ease = 1 - Math.pow(1 - t, 3);
+      setValue(Math.round(from + (target - from) * ease));
+      if (t < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
   }, [target, duration]);
   return { value, ref };
 }
@@ -249,7 +246,7 @@ export default function AnalyticsPage() {
         <style>{`@keyframes growUp { from { transform: scaleY(0); transform-origin: bottom; opacity: 0; } to { transform: scaleY(1); transform-origin: bottom; opacity: 1; } }`}</style>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <div className="space-y-8 mb-8">
         {/* Revenue by Line — Pie Charts per Airport */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <h2 className="text-sm font-semibold text-gray-900 mb-5">Revenue by Line</h2>
@@ -283,46 +280,45 @@ export default function AnalyticsPage() {
 
             return (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-5">
+                <div className="flex items-center justify-center gap-8 flex-wrap mb-6">
                   {allPies.map((pie, pieIdx) => (
-                    <div key={pie.aptCode} className="text-center">
-                      <p className="text-xs font-bold text-gray-900 mb-3 font-mono">{pie.aptCode === "ALL" ? "All Airports" : pie.aptCode}</p>
-                      <svg viewBox="0 0 200 200" className="w-36 h-36 mx-auto">
-                        <style>{`
-                          @keyframes pieReveal { from { stroke-dashoffset: 502; } to { stroke-dashoffset: 0; } }
-                        `}</style>
+                    <div key={pie.aptCode} className="text-center group">
+                      <svg viewBox="0 0 200 200" className="w-48 h-48 mx-auto drop-shadow-sm" style={{ animation: `spinIn 0.8s ease-out ${pieIdx * 0.2}s both` }}>
                         {pie.slices.map((s, i) => {
                           if (s.pct >= 0.999) {
-                            return <circle key={i} cx="100" cy="100" r="80" fill={s.color} className="animate-[pieReveal_1s_ease-out]" />;
+                            return <circle key={i} cx="100" cy="100" r="85" fill={s.color} />;
                           }
-                          const start = polarToCartesian(100, 100, 80, s.startAngle);
-                          const end = polarToCartesian(100, 100, 80, s.endAngle);
+                          const start = polarToCartesian(100, 100, 85, s.startAngle);
+                          const end = polarToCartesian(100, 100, 85, s.endAngle);
                           const largeArc = s.pct > 0.5 ? 1 : 0;
                           return (
                             <path
                               key={i}
-                              d={`M100,100 L${start.x},${start.y} A80,80 0 ${largeArc} 1 ${end.x},${end.y} Z`}
+                              d={`M100,100 L${start.x},${start.y} A85,85 0 ${largeArc} 1 ${end.x},${end.y} Z`}
                               fill={s.color}
                               stroke="white"
-                              strokeWidth="1.5"
-                              style={{ opacity: 0, animation: `fadeIn 0.4s ease-out ${pieIdx * 0.15 + i * 0.08}s forwards` }}
+                              strokeWidth="2"
+                              className="transition-all duration-300 hover:opacity-80"
+                              style={{ opacity: 0, animation: `sliceIn 0.5s ease-out ${pieIdx * 0.2 + i * 0.1}s forwards`, transformOrigin: "100px 100px" }}
                             />
                           );
                         })}
-                        <circle cx="100" cy="100" r="45" fill="white" />
-                        <text x="100" y="96" textAnchor="middle" className="text-sm font-bold fill-gray-900">{Math.round(convert(pie.total, "USD") / 1000000).toLocaleString()}m</text>
-                        <text x="100" y="112" textAnchor="middle" className="text-[9px] fill-gray-400">Total</text>
+                        <circle cx="100" cy="100" r="52" fill="white" className="drop-shadow-sm" />
+                        <text x="100" y="92" textAnchor="middle" className="fill-gray-900" style={{ fontSize: "18px", fontWeight: 700 }}>{Math.round(convert(pie.total, "USD") / 1000000).toLocaleString()}m</text>
+                        <text x="100" y="114" textAnchor="middle" className="fill-gray-400" style={{ fontSize: "11px" }}>{pie.aptCode === "ALL" ? "All Airports" : pie.aptCode}</text>
                       </svg>
                     </div>
                   ))}
                 </div>
-                <style>{`@keyframes fadeIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }`}</style>
-                {/* Single shared legend */}
-                <div className="flex items-center justify-center gap-4 flex-wrap">
+                <style>{`
+                  @keyframes spinIn { from { opacity: 0; transform: rotate(-90deg) scale(0.6); } to { opacity: 1; transform: rotate(0deg) scale(1); } }
+                  @keyframes sliceIn { from { opacity: 0; transform: scale(0); } to { opacity: 1; transform: scale(1); } }
+                `}</style>
+                <div className="flex items-center justify-center gap-5 flex-wrap">
                   {legendSlices.map((s, i) => (
-                    <div key={i} className="flex items-center gap-1.5">
-                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
-                      <span className="text-[11px] text-gray-600">{s.name}</span>
+                    <div key={i} className="flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: s.color }} />
+                      <span className="text-xs text-gray-600 font-medium">{s.name}</span>
                     </div>
                   ))}
                 </div>
