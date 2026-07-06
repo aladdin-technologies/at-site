@@ -38,6 +38,7 @@ export default function AnalyticsPage() {
   const [selectedYear, setSelectedYear] = useState(2025);
   const [viewMode, setViewMode] = useState<"full" | "ytd">("full");
   const [selectedAirport, setSelectedAirport] = useState("ALL");
+  const [pieTooltip, setPieTooltip] = useState<{ name: string; value: number; pct: number; x: number; y: number } | null>(null);
   const { convert, symbol } = useAeroCurrencyConverter();
   const { actualMonths } = useActualMonths();
 
@@ -291,26 +292,21 @@ export default function AnalyticsPage() {
                           const start = polarToCartesian(100, 100, 85, s.startAngle);
                           const end = polarToCartesian(100, 100, 85, s.endAngle);
                           const largeArc = s.pct > 0.5 ? 1 : 0;
-                          const midAngle = (s.startAngle + s.endAngle) / 2;
                           return (
-                            <g key={i} className="group/slice">
-                              <path
-                                d={`M100,100 L${start.x},${start.y} A85,85 0 ${largeArc} 1 ${end.x},${end.y} Z`}
-                                fill={s.color}
-                                stroke="white"
-                                strokeWidth="2"
-                                className="transition-all duration-300 hover:brightness-110 cursor-pointer"
-                                style={{ opacity: 0, animation: `sliceIn 0.5s ease-out ${pieIdx * 0.2 + i * 0.1}s forwards`, transformOrigin: "100px 100px" }}
-                              />
-                              <foreignObject x="0" y="0" width="200" height="200" className="pointer-events-none opacity-0 group-hover/slice:opacity-100 transition-opacity duration-200" style={{ overflow: "visible" }}>
-                                <div style={{ position: "absolute", left: `${100 + 95 * Math.cos((midAngle - 90) * Math.PI / 180)}px`, top: `${100 + 95 * Math.sin((midAngle - 90) * Math.PI / 180)}px`, transform: "translate(-50%, -50%)" }}>
-                                  <div className="bg-gray-900 text-white rounded-lg px-2.5 py-1.5 text-[10px] whitespace-nowrap shadow-xl">
-                                    <p className="font-bold">{s.name}</p>
-                                    <p>{Math.round(convert(s.rev, "USD") / 1000000).toLocaleString()}m · {(s.pct * 100).toFixed(1)}%</p>
-                                  </div>
-                                </div>
-                              </foreignObject>
-                            </g>
+                            <path
+                              key={i}
+                              d={`M100,100 L${start.x},${start.y} A85,85 0 ${largeArc} 1 ${end.x},${end.y} Z`}
+                              fill={s.color}
+                              stroke="white"
+                              strokeWidth="2"
+                              className="transition-all duration-300 hover:brightness-110 cursor-pointer"
+                              style={{ opacity: 0, animation: `sliceIn 0.5s ease-out ${pieIdx * 0.2 + i * 0.1}s forwards`, transformOrigin: "100px 100px" }}
+                              onMouseEnter={(e) => {
+                                const rect = (e.target as SVGPathElement).closest("svg")!.getBoundingClientRect();
+                                setPieTooltip({ name: s.name, value: s.rev, pct: s.pct, x: rect.left + rect.width / 2, y: rect.top - 10 });
+                              }}
+                              onMouseLeave={() => setPieTooltip(null)}
+                            />
                           );
                         })}
                         <circle cx="100" cy="100" r="52" fill="white" className="drop-shadow-sm" />
@@ -332,6 +328,14 @@ export default function AnalyticsPage() {
                     </div>
                   ))}
                 </div>
+                {pieTooltip && (
+                  <div className="fixed z-50 pointer-events-none" style={{ left: pieTooltip.x, top: pieTooltip.y, transform: "translate(-50%, -100%)" }}>
+                    <div className="bg-gray-900 text-white rounded-lg px-3 py-2 text-[11px] whitespace-nowrap shadow-xl">
+                      <p className="font-bold">{pieTooltip.name}</p>
+                      <p>{Math.round(convert(pieTooltip.value, "USD") / 1000000).toLocaleString()}m · {(pieTooltip.pct * 100).toFixed(1)}%</p>
+                    </div>
+                  </div>
+                )}
               </>
             );
           })()}
