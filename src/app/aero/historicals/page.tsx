@@ -12,7 +12,6 @@ interface CfgDriver { id: string; name: string; unit: string; }
 interface DataPoint { year: number; month: number; airport_code: string; airline_code: string; }
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const YEARS = [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025];
 
 export default function HistoricalsPage() {
   const [cfgAirports, setCfgAirports] = useState<CfgAirport[]>([]);
@@ -56,6 +55,19 @@ export default function HistoricalsPage() {
 
   const activePoints = viewMode === "traffic" ? trafficPoints : revenuePoints;
 
+  const dataYears = useMemo(() => {
+    const allPoints = [...trafficPoints, ...revenuePoints];
+    if (allPoints.length === 0) return [];
+    const yrs = [...new Set(allPoints.map(p => p.year))].sort((a, b) => a - b);
+    return yrs;
+  }, [trafficPoints, revenuePoints]);
+
+  async function clearAllData() {
+    if (!confirm("Are you sure you want to delete ALL historical data? This cannot be undone.")) return;
+    await supabase.from("historical_data").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+    await loadData();
+  }
+
   const expectedCombos = useMemo(() => {
     const combos = new Set<string>();
     for (const apt of cfgAirports) {
@@ -73,7 +85,7 @@ export default function HistoricalsPage() {
     if (expectedCombos.size === 0) return {};
 
     const result: Record<string, { status: "full" | "partial" | "none"; found: Set<string>; missing: string[] }> = {};
-    for (const year of YEARS) {
+    for (const year of dataYears) {
       for (let m = 1; m <= 12; m++) {
         const key = `${year}-${m}`;
         const matchingPoints = activePoints.filter(p => p.year === year && p.month === m);
@@ -275,6 +287,9 @@ export default function HistoricalsPage() {
               <button onClick={() => setViewMode("revenue")} className={`px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === "revenue" ? "bg-blue-50 text-blue-700" : "text-gray-500 hover:bg-gray-50"}`}>Revenue</button>
               <button onClick={() => setViewMode("traffic")} className={`px-3 py-1.5 text-xs font-medium transition-colors ${viewMode === "traffic" ? "bg-purple-50 text-purple-700" : "text-gray-500 hover:bg-gray-50"}`}>Traffic</button>
             </div>
+            {(totalTraffic > 0 || totalRevenue > 0) && (
+              <button onClick={clearAllData} className="px-3 py-1.5 text-[10px] font-medium text-red-500 hover:text-red-700 hover:underline transition-colors">Clear All Data</button>
+            )}
           </div>
         </div>
 
@@ -289,7 +304,7 @@ export default function HistoricalsPage() {
               </tr>
             </thead>
             <tbody>
-              {YEARS.map(year => (
+              {dataYears.map(year => (
                 <tr key={year} className="border-b border-gray-50 hover:bg-gray-50/30 transition-colors">
                   <td className="px-4 py-2.5 sticky left-0 bg-white z-10">
                     <span className="font-bold text-gray-900 font-mono">{year}</span>
