@@ -221,14 +221,14 @@ export default function AnalyticsPage() {
           <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-semibold text-gray-900">Monthly Revenue — {selectedYear}</h2>
-              <div className="flex items-center gap-4 text-[10px]">
-                <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-blue-500" /> Revenue</span>
-                <span className="flex items-center gap-1"><span className="w-3 h-1 rounded bg-purple-500" /> RPP</span>
+              <div className="flex items-center gap-4 text-xs">
+                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-blue-500" /><span className="text-gray-600 font-medium">Revenue</span></span>
+                <span className="flex items-center gap-1.5"><span className="w-4 h-0.5 rounded bg-purple-500" /><span className="text-gray-600 font-medium">Revenue per Pax</span></span>
               </div>
             </div>
             <div className="relative">
-              {/* Bars */}
-              <div className="flex items-end gap-2 h-72">
+              {/* Bars — shorter to leave room for RPP line on top */}
+              <div className="flex items-end gap-2 h-72 pt-16">
                 {MONTHS.map((m, i) => {
                   const val = monthlyRevenue[i];
                   const prevVal = prevMonthlyRevenue[i];
@@ -260,24 +260,27 @@ export default function AnalyticsPage() {
                   );
                 })}
               </div>
-              {/* RPP line overlay */}
-              <svg className="absolute inset-0 w-full pointer-events-none" style={{ height: "calc(100% - 20px)" }}>
+              {/* RPP line overlay — positioned in top area above bars */}
+              <svg className="absolute left-0 right-0 top-0 h-16 pointer-events-none" preserveAspectRatio="none">
                 {monthlyRpp.some(v => v > 0) && (() => {
                   const pts = monthlyRpp.map((v, i) => {
                     if (v <= 0) return null;
                     const x = ((i + 0.5) / 12) * 100;
                     const normalized = (v - minRpp) / rppRange;
-                    const y = 85 - normalized * 55;
+                    const y = 90 - normalized * 50;
                     return { x, y, val: v };
                   }).filter(Boolean) as { x: number; y: number; val: number }[];
                   const polyline = pts.map(p => `${p.x}%,${p.y}%`).join(" ");
+                  const fillPts = `${polyline} ${pts[pts.length - 1].x}%,100% ${pts[0].x}%,100%`;
                   return (
                     <>
+                      <defs><linearGradient id="rppFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.12" /><stop offset="100%" stopColor="#8b5cf6" stopOpacity="0" /></linearGradient></defs>
+                      <polygon points={fillPts} fill="url(#rppFill)" />
                       <polyline points={polyline} fill="none" stroke="#8b5cf6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                       {pts.map((p, i) => (
                         <g key={i}>
                           <circle cx={`${p.x}%`} cy={`${p.y}%`} r="4" fill="white" stroke="#8b5cf6" strokeWidth="2" />
-                          <text x={`${p.x}%`} y={`${p.y - 4}%`} textAnchor="middle" fill="#7c3aed" style={{ fontSize: "10px", fontWeight: 600, fontFamily: "monospace" }}>{convert(p.val, "USD").toFixed(0)}</text>
+                          <text x={`${p.x}%`} y={`${p.y - 8}%`} textAnchor="middle" fill="#7c3aed" style={{ fontSize: "11px", fontWeight: 700, fontFamily: "monospace" }}>{convert(p.val, "USD").toFixed(0)}</text>
                         </g>
                       ))}
                     </>
