@@ -40,6 +40,9 @@ export default function AnalyticsPage() {
   const [selectedYear, setSelectedYear] = useState(2025);
   const [viewMode, setViewMode] = useState<"full" | "ytd">("full");
   const [selectedAirport, setSelectedAirport] = useState("ALL");
+  const [analyticsTab, setAnalyticsTab] = useState<"overview" | "lines">("overview");
+  const [cfgLines, setCfgLines] = useState<{ id: string; name: string; driver_id: string | null; }[]>([]);
+  const [cfgDrivers, setCfgDrivers] = useState<{ id: string; name: string; }[]>([]);
   const [pieTooltip, setPieTooltip] = useState<{ name: string; value: number; pct: number; x: number; y: number } | null>(null);
   const { convert, symbol } = useAeroCurrencyConverter();
   const { actualMonths } = useActualMonths();
@@ -73,6 +76,13 @@ export default function AnalyticsPage() {
       setTrafficData(trf);
       setBudgetRevData(bRev);
       setBudgetTrfData(bTrf);
+
+      const [lRes, dRes] = await Promise.all([
+        supabase.from("forecast_charge_types").select("id, name, driver_id").order("sort_order"),
+        supabase.from("forecast_drivers").select("id, name").order("name"),
+      ]);
+      setCfgLines((lRes.data ?? []) as any);
+      setCfgDrivers((dRes.data ?? []) as any);
       setLoading(false);
     }
     load();
@@ -90,6 +100,8 @@ export default function AnalyticsPage() {
 
   const filteredRevenue = useMemo(() => selectedAirport === "ALL" ? revenueData : revenueData.filter(d => d.airport_code === selectedAirport), [revenueData, selectedAirport]);
   const filteredTraffic = useMemo(() => selectedAirport === "ALL" ? trafficData : trafficData.filter(d => d.airport_code === selectedAirport), [trafficData, selectedAirport]);
+  const driverMap = useMemo(() => Object.fromEntries(cfgDrivers.map(d => [d.id, d.name])), [cfgDrivers]);
+
   const filteredBudgetRev = useMemo(() => selectedAirport === "ALL" ? budgetRevData : budgetRevData.filter(d => d.airport_code === selectedAirport), [budgetRevData, selectedAirport]);
   const filteredBudgetTrf = useMemo(() => selectedAirport === "ALL" ? budgetTrfData : budgetTrfData.filter(d => d.airport_code === selectedAirport), [budgetTrfData, selectedAirport]);
 
@@ -209,6 +221,13 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Monthly Revenue Chart */}
+      {/* Analytics sub-tabs */}
+      <div className="flex gap-1 mb-6 border-b border-gray-200">
+        <button onClick={() => setAnalyticsTab("overview")} className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${analyticsTab === "overview" ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700"}`}>Overview</button>
+        <button onClick={() => setAnalyticsTab("lines")} className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${analyticsTab === "lines" ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700"}`}>Revenue Lines</button>
+      </div>
+
+      <div style={{ display: analyticsTab === "overview" ? "block" : "none" }}>
       {/* Combined Revenue + RPP Chart */}
       {(() => {
         const monthlyPax = MONTHS.map((_, i) => filteredTraffic.filter(d => d.year === selectedYear && d.month === i + 1 && d.metric_name === "Total Passengers").reduce((s, d) => s + Number(d.value), 0));
@@ -219,8 +238,16 @@ export default function AnalyticsPage() {
 
         return (
           <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-gray-900">Monthly Revenue — {selectedYear}</h2>
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+              <div className="flex items-center gap-3">
+                <h2 className="text-sm font-semibold text-gray-900">Monthly Revenue — {selectedYear}</h2>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => setSelectedAirport("ALL")} className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition-colors ${selectedAirport === "ALL" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>All</button>
+                  {availableAirports.map(code => (
+                    <button key={code} onClick={() => setSelectedAirport(code)} className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold transition-colors ${selectedAirport === code ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>{code}</button>
+                  ))}
+                </div>
+              </div>
               <div className="flex items-center gap-4 text-xs">
                 <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-blue-500" /><span className="text-gray-600 font-medium">Revenue</span></span>
                 <span className="flex items-center gap-1.5"><span className="w-4 h-0.5 rounded bg-purple-500" /><span className="text-gray-600 font-medium">Revenue per Pax</span></span>
@@ -578,6 +605,121 @@ export default function AnalyticsPage() {
             </div>
           );
         })()}
+        </div>
+      </div>
+      </div>
+
+      <div style={{ display: analyticsTab === "lines" ? "block" : "none" }}>
+        <div className="space-y-6">
+          {cfgLines.length === 0 ? (
+            <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+              <p className="text-sm text-gray-500">No revenue lines configured</p>
+              <p className="text-xs text-gray-400 mt-1">Set up revenue lines in the Revenue Lines tab</p>
+            </div>
+          ) : (
+            cfgLines.map(line => {
+              const driverName = line.driver_id ? driverMap[line.driver_id] : "Total Passengers";
+              const lineMonthlyRev = MONTHS.map((_, mi) => filteredRevenue.filter(d => d.year === selectedYear && d.month === mi + 1 && d.metric_name === line.name).reduce((s, d) => s + Number(d.value), 0));
+              const lineMonthlyDriver = MONTHS.map((_, mi) => filteredTraffic.filter(d => d.year === selectedYear && d.month === mi + 1 && d.metric_name === driverName).reduce((s, d) => s + Number(d.value), 0));
+              const lineMonthlyYield = MONTHS.map((_, mi) => lineMonthlyDriver[mi] > 0 ? lineMonthlyRev[mi] / lineMonthlyDriver[mi] : 0);
+              const maxLineRev = Math.max(...lineMonthlyRev, 1);
+              const yieldVals = lineMonthlyYield.filter(v => v > 0);
+              const maxYield = Math.max(...yieldVals, 1);
+              const minYield = Math.min(...yieldVals, 0);
+              const yieldRange = maxYield - minYield || 1;
+              const totalLineRev = lineMonthlyRev.reduce((a, b) => a + b, 0);
+              const totalDriver = lineMonthlyDriver.reduce((a, b) => a + b, 0);
+              const avgYield = totalDriver > 0 ? totalLineRev / totalDriver : 0;
+
+              const prevLineRev = filteredRevenue.filter(d => d.year === selectedYear - 1 && d.metric_name === line.name && activeMonths.includes(d.month)).reduce((s, d) => s + Number(d.value), 0);
+              const curLineRevTotal = lineMonthlyRev.filter((_, mi) => activeMonths.includes(mi + 1)).reduce((a, b) => a + b, 0);
+              const lineYoy = prevLineRev > 0 ? ((curLineRevTotal - prevLineRev) / prevLineRev) * 100 : 0;
+
+              const rppH = 56;
+              const dotPositions = lineMonthlyYield.map((v, i) => {
+                if (v <= 0) return null;
+                const normalized = (v - minYield) / yieldRange;
+                const dotY = rppH - 16 - normalized * (rppH - 32);
+                return { i, val: v, dotY };
+              }).filter(Boolean) as { i: number; val: number; dotY: number }[];
+
+              return (
+                <div key={line.id} className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                  <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                    <div className="flex items-center gap-3">
+                      <h2 className="text-sm font-semibold text-gray-900">{line.name}</h2>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 font-medium">{driverName}</span>
+                      {lineYoy !== 0 && <span className={`text-[10px] font-mono font-semibold ${lineYoy >= 0 ? "text-emerald-600" : "text-red-500"}`}>{lineYoy >= 0 ? "+" : ""}{lineYoy.toFixed(1)}% YoY</span>}
+                    </div>
+                    <div className="flex items-center gap-3 text-xs">
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => setSelectedAirport("ALL")} className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition-colors ${selectedAirport === "ALL" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600"}`}>All</button>
+                        {availableAirports.map(code => (
+                          <button key={code} onClick={() => setSelectedAirport(code)} className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold transition-colors ${selectedAirport === code ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600"}`}>{code}</button>
+                        ))}
+                      </div>
+                      <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-blue-500" /><span className="text-gray-600 font-medium">Revenue</span></span>
+                      <span className="flex items-center gap-1"><span className="w-4 h-0.5 rounded bg-purple-500" /><span className="text-gray-600 font-medium">Yield</span></span>
+                    </div>
+                  </div>
+
+                  <div className="relative">
+                    {/* Yield line overlay */}
+                    <div className="absolute left-0 right-0 top-0 pointer-events-none" style={{ height: rppH }}>
+                      <svg className="absolute inset-0 w-full" viewBox={`0 0 ${12 * 100} ${rppH}`} preserveAspectRatio="none" style={{ height: rppH, overflow: "visible" }}>
+                        {dotPositions.length > 1 && (
+                          <polyline points={dotPositions.map(p => `${p.i * 100 + 50},${p.dotY + 5}`).join(" ")} fill="none" stroke="#8b5cf6" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+                        )}
+                      </svg>
+                      <div className="absolute inset-0 flex gap-2">
+                        {MONTHS.map((_, i) => {
+                          const pos = dotPositions.find(p => p.i === i);
+                          return (
+                            <div key={i} className="flex-1 relative">
+                              {pos && (
+                                <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center" style={{ top: pos.dotY - 16 }}>
+                                  <span className="text-[9px] text-purple-600 font-mono font-bold">{convert(pos.val, "USD").toFixed(0)}</span>
+                                  <div className="w-2.5 h-2.5 rounded-full bg-white border-2 border-purple-500" />
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Revenue bars */}
+                    <div className="flex items-end gap-2 h-56 pt-14">
+                      {MONTHS.map((m, i) => {
+                        const val = lineMonthlyRev[i];
+                        const pct = (val / maxLineRev) * 100;
+                        return (
+                          <div key={m} className="flex-1 flex flex-col items-center group relative h-full">
+                            <div className="w-full flex-1 flex flex-col items-center justify-end overflow-hidden">
+                              <span className="text-[8px] text-gray-500 font-mono mb-0.5 shrink-0">{val > 0 ? `${Math.round(convert(val, "USD") / 1000000)}m` : ""}</span>
+                              {val > 0 ? (
+                                <div className="w-full rounded-t-md bg-blue-500 hover:bg-blue-600 transition-colors duration-300 cursor-pointer animate-[growUp_0.8s_ease-out_forwards]" style={{ height: `${pct}%`, minHeight: 4, animationDelay: `${i * 60}ms`, opacity: 0 }} />
+                              ) : (
+                                <div className="w-full rounded-t-md bg-gray-100" style={{ minHeight: 4 }} />
+                              )}
+                            </div>
+                            <span className="text-[9px] text-gray-500 shrink-0 mt-1">{m}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* KPI strip */}
+                  <div className="flex items-center gap-6 mt-3 pt-3 border-t border-gray-100 text-xs">
+                    <div><span className="text-gray-400">Total Revenue</span><span className="font-bold text-gray-900 ml-1.5 font-mono">{Math.round(convert(totalLineRev, "USD") / 1000000).toLocaleString()}m</span></div>
+                    <div><span className="text-gray-400">Avg Yield</span><span className="font-bold text-gray-900 ml-1.5 font-mono">{convert(avgYield, "USD").toFixed(1)}</span></div>
+                    <div><span className="text-gray-400">Total {driverName}</span><span className="font-bold text-gray-900 ml-1.5 font-mono">{totalDriver > 1000000 ? `${(totalDriver / 1000000).toFixed(1)}m` : totalDriver > 1000 ? `${(totalDriver / 1000).toFixed(0)}k` : totalDriver.toLocaleString()}</span></div>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
     </div>
