@@ -188,7 +188,7 @@ export default function AnalyticsPage() {
 
   return (
     <div className="p-6">
-      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3 sticky top-0 bg-gray-50 z-10 py-3 -mx-6 px-6 border-b border-gray-100">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Analytics</h1>
           <p className="text-sm text-gray-500">
