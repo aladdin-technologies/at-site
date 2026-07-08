@@ -648,18 +648,12 @@ export default function AnalyticsPage() {
                   <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
                     <div className="flex items-center gap-3">
                       <h2 className="text-sm font-semibold text-gray-900">{line.name}</h2>
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 font-medium">{driverName}</span>
-                      {lineYoy !== 0 && <span className={`text-[10px] font-mono font-semibold ${lineYoy >= 0 ? "text-emerald-600" : "text-red-500"}`}>{lineYoy >= 0 ? "+" : ""}{lineYoy.toFixed(1)}% YoY</span>}
-                    </div>
-                    <div className="flex items-center gap-3 text-xs">
                       <div className="flex items-center gap-1">
                         <button onClick={() => setSelectedAirport("ALL")} className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition-colors ${selectedAirport === "ALL" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600"}`}>All</button>
                         {availableAirports.map(code => (
                           <button key={code} onClick={() => setSelectedAirport(code)} className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold transition-colors ${selectedAirport === code ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600"}`}>{code}</button>
                         ))}
                       </div>
-                      <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-blue-500" /><span className="text-gray-600 font-medium">Revenue</span></span>
-                      <span className="flex items-center gap-1"><span className="w-4 h-0.5 rounded bg-purple-500" /><span className="text-gray-600 font-medium">Yield</span></span>
                     </div>
                   </div>
 
@@ -677,9 +671,14 @@ export default function AnalyticsPage() {
                           return (
                             <div key={i} className="flex-1 relative">
                               {pos && (
-                                <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center" style={{ top: pos.dotY - 16 }}>
-                                  <span className="text-[9px] text-purple-600 font-mono font-bold">{convert(pos.val, "USD").toFixed(0)}</span>
-                                  <div className="w-2.5 h-2.5 rounded-full bg-white border-2 border-purple-500" />
+                                <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center group/yd" style={{ top: pos.dotY - 16 }}>
+                                  <span className="text-[9px] text-purple-600 font-mono font-bold">{convert(pos.val, "USD").toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</span>
+                                  <div className="w-2.5 h-2.5 rounded-full bg-white border-2 border-purple-500 cursor-pointer group-hover/yd:scale-150 transition-transform" />
+                                  <div className="absolute -top-7 left-1/2 -translate-x-1/2 opacity-0 group-hover/yd:opacity-100 transition-opacity pointer-events-none z-30">
+                                    <div className="bg-gray-900 text-white rounded-lg px-2 py-1 text-[9px] whitespace-nowrap shadow-xl">
+                                      <span className="text-purple-300">Yield: {convert(pos.val, "USD").toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</span>
+                                    </div>
+                                  </div>
                                 </div>
                               )}
                             </div>
@@ -693,6 +692,8 @@ export default function AnalyticsPage() {
                       {MONTHS.map((m, i) => {
                         const val = lineMonthlyRev[i];
                         const pct = (val / maxLineRev) * 100;
+                        const prevYearVal = filteredRevenue.filter(d => d.year === selectedYear - 1 && d.month === i + 1 && d.metric_name === line.name).reduce((s, d) => s + Number(d.value), 0);
+                        const barYoy = prevYearVal > 0 ? ((val - prevYearVal) / prevYearVal) * 100 : 0;
                         return (
                           <div key={m} className="flex-1 flex flex-col items-center group relative h-full">
                             <div className="w-full flex-1 flex flex-col items-center justify-end overflow-hidden">
@@ -704,17 +705,30 @@ export default function AnalyticsPage() {
                               )}
                             </div>
                             <span className="text-[9px] text-gray-500 shrink-0 mt-1">{m}</span>
+                            {val > 0 && prevYearVal > 0 && (
+                              <div className="absolute bottom-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-20">
+                                <div className="bg-gray-900 text-white rounded-lg px-2.5 py-1.5 text-[10px] whitespace-nowrap shadow-xl">
+                                  <span className={barYoy >= 0 ? "text-emerald-400" : "text-red-400"}>vs {selectedYear - 1}: {barYoy >= 0 ? "+" : ""}{barYoy.toFixed(1)}%</span>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         );
                       })}
                     </div>
                   </div>
 
-                  {/* KPI strip */}
-                  <div className="flex items-center gap-6 mt-3 pt-3 border-t border-gray-100 text-xs">
-                    <div><span className="text-gray-400">Total Revenue</span><span className="font-bold text-gray-900 ml-1.5 font-mono">{Math.round(convert(totalLineRev, "USD") / 1000000).toLocaleString()}m</span></div>
-                    <div><span className="text-gray-400">Avg Yield</span><span className="font-bold text-gray-900 ml-1.5 font-mono">{convert(avgYield, "USD").toFixed(1)}</span></div>
-                    <div><span className="text-gray-400">Total {driverName}</span><span className="font-bold text-gray-900 ml-1.5 font-mono">{totalDriver > 1000000 ? `${(totalDriver / 1000000).toFixed(1)}m` : totalDriver > 1000 ? `${(totalDriver / 1000).toFixed(0)}k` : totalDriver.toLocaleString()}</span></div>
+                  {/* KPI strip + legend */}
+                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 text-xs flex-wrap gap-2">
+                    <div className="flex items-center gap-5">
+                      <div><span className="text-gray-400">Total Revenue</span><span className="font-bold text-gray-900 ml-1.5 font-mono">{Math.round(convert(totalLineRev, "USD") / 1000000).toLocaleString()}m</span></div>
+                      <div><span className="text-gray-400">Avg Yield</span><span className="font-bold text-gray-900 ml-1.5 font-mono">{convert(avgYield, "USD").toFixed(1).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</span></div>
+                      <div><span className="text-gray-400">Total {driverName}</span><span className="font-bold text-gray-900 ml-1.5 font-mono">{totalDriver > 1000000 ? `${(totalDriver / 1000000).toFixed(1)}m` : totalDriver > 1000 ? `${(totalDriver / 1000).toFixed(0)}k` : totalDriver.toLocaleString()}</span></div>
+                    </div>
+                    <div className="flex items-center gap-3 text-[10px]">
+                      <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-blue-500" /><span className="text-gray-500">Revenue</span></span>
+                      <span className="flex items-center gap-1"><span className="w-4 h-0.5 rounded bg-purple-500" /><span className="text-gray-500">Yield (Revenue ÷ {driverName})</span></span>
+                    </div>
                   </div>
                 </div>
               );
