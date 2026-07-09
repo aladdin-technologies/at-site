@@ -239,18 +239,12 @@ export default function AnalyticsPage() {
         return (
           <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8 shadow-sm">
             <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-              <div className="flex items-center gap-3">
-                <h2 className="text-sm font-semibold text-gray-900">Monthly Revenue — {selectedYear}</h2>
-                <div className="flex items-center gap-1">
-                  <button onClick={() => setSelectedAirport("ALL")} className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition-colors ${selectedAirport === "ALL" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>All</button>
-                  {availableAirports.map(code => (
-                    <button key={code} onClick={() => setSelectedAirport(code)} className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold transition-colors ${selectedAirport === code ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>{code}</button>
-                  ))}
-                </div>
-              </div>
-              <div className="flex items-center gap-4 text-xs">
-                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-blue-500" /><span className="text-gray-600 font-medium">Revenue</span></span>
-                <span className="flex items-center gap-1.5"><span className="w-4 h-0.5 rounded bg-purple-500" /><span className="text-gray-600 font-medium">Revenue per Pax</span></span>
+              <h2 className="text-sm font-semibold text-gray-900">Monthly Revenue — {selectedYear}</h2>
+              <div className="flex items-center gap-1">
+                <button onClick={() => setSelectedAirport("ALL")} className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition-colors ${selectedAirport === "ALL" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>All</button>
+                {availableAirports.map(code => (
+                  <button key={code} onClick={() => setSelectedAirport(code)} className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold transition-colors ${selectedAirport === code ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>{code}</button>
+                ))}
               </div>
             </div>
             <div className="relative">
@@ -341,6 +335,10 @@ export default function AnalyticsPage() {
               })()}
             </div>
             <style>{`@keyframes growUp { from { transform: scaleY(0); transform-origin: bottom; opacity: 0; } to { transform: scaleY(1); transform-origin: bottom; opacity: 1; } }`}</style>
+            <div className="flex justify-end mt-3 gap-4 text-xs">
+              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-blue-500" /><span className="text-gray-500">Revenue</span></span>
+              <span className="flex items-center gap-1.5"><span className="w-4 h-0.5 rounded bg-purple-500" /><span className="text-gray-500">Revenue per Pax</span></span>
+            </div>
           </div>
         );
       })()}
@@ -646,14 +644,12 @@ export default function AnalyticsPage() {
               return (
                 <div key={line.id} className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
                   <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-                    <div className="flex items-center gap-3">
-                      <h2 className="text-sm font-semibold text-gray-900">{line.name}</h2>
-                      <div className="flex items-center gap-1">
-                        <button onClick={() => setSelectedAirport("ALL")} className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition-colors ${selectedAirport === "ALL" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600"}`}>All</button>
-                        {availableAirports.map(code => (
-                          <button key={code} onClick={() => setSelectedAirport(code)} className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold transition-colors ${selectedAirport === code ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600"}`}>{code}</button>
-                        ))}
-                      </div>
+                    <h2 className="text-sm font-semibold text-gray-900">{line.name}</h2>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => setSelectedAirport("ALL")} className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition-colors ${selectedAirport === "ALL" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600"}`}>All</button>
+                      {availableAirports.map(code => (
+                        <button key={code} onClick={() => setSelectedAirport(code)} className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold transition-colors ${selectedAirport === code ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600"}`}>{code}</button>
+                      ))}
                     </div>
                   </div>
 
@@ -718,17 +714,16 @@ export default function AnalyticsPage() {
                     </div>
                   </div>
 
-                  {/* KPI strip + legend */}
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 text-xs flex-wrap gap-2">
-                    <div className="flex items-center gap-5">
-                      <div><span className="text-gray-400">Total Revenue</span><span className="font-bold text-gray-900 ml-1.5 font-mono">{Math.round(convert(totalLineRev, "USD") / 1000000).toLocaleString()}m</span></div>
-                      <div><span className="text-gray-400">Avg Yield</span><span className="font-bold text-gray-900 ml-1.5 font-mono">{convert(avgYield, "USD").toFixed(1).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</span></div>
-                      <div><span className="text-gray-400">Total {driverName}</span><span className="font-bold text-gray-900 ml-1.5 font-mono">{totalDriver > 1000000 ? `${(totalDriver / 1000000).toFixed(1)}m` : totalDriver > 1000 ? `${(totalDriver / 1000).toFixed(0)}k` : totalDriver.toLocaleString()}</span></div>
-                    </div>
-                    <div className="flex items-center gap-3 text-[10px]">
-                      <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-blue-500" /><span className="text-gray-500">Revenue</span></span>
-                      <span className="flex items-center gap-1"><span className="w-4 h-0.5 rounded bg-purple-500" /><span className="text-gray-500">Yield (Revenue ÷ {driverName})</span></span>
-                    </div>
+                  {/* KPI strip */}
+                  <div className="flex items-center gap-5 mt-3 pt-3 border-t border-gray-100 text-xs">
+                    <div><span className="text-gray-400">Total Revenue</span><span className="font-bold text-gray-900 ml-1.5 font-mono">{Math.round(convert(totalLineRev, "USD") / 1000000).toLocaleString()}m</span></div>
+                    <div><span className="text-gray-400">Avg Yield</span><span className="font-bold text-gray-900 ml-1.5 font-mono">{convert(avgYield, "USD").toFixed(1).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</span></div>
+                    <div><span className="text-gray-400">Total {driverName}</span><span className="font-bold text-gray-900 ml-1.5 font-mono">{totalDriver > 1000000 ? `${(totalDriver / 1000000).toFixed(1)}m` : totalDriver > 1000 ? `${(totalDriver / 1000).toFixed(0)}k` : totalDriver.toLocaleString()}</span></div>
+                  </div>
+                  {/* Legend — bottom right */}
+                  <div className="flex justify-end mt-2 gap-3 text-[10px]">
+                    <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-sm bg-blue-500" /><span className="text-gray-500">Revenue</span></span>
+                    <span className="flex items-center gap-1"><span className="w-4 h-0.5 rounded bg-purple-500" /><span className="text-gray-500">Yield (Revenue ÷ {driverName})</span></span>
                   </div>
                 </div>
               );
