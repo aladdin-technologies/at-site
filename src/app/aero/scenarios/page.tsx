@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
-import { Plus, Save, Trash2, Copy, Clock, Check, ChevronDown, ChevronRight, Download, Upload, X, RotateCcw, Eye } from "lucide-react";
+import { Plus, Save, Trash2, Copy, Clock, Check, X, RotateCcw, Eye } from "lucide-react";
 
 interface ForecastVersion {
   id: string; name: string; description: string | null; status: string;
@@ -31,7 +31,6 @@ export default function ScenariosPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
-  const [selectedVersion, setSelectedVersion] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState<string | null>(null);
 
   useEffect(() => { loadAll(); }, []);

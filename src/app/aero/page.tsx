@@ -197,7 +197,7 @@ export default function ForecastDashboard() {
           <KPI label="Total Passengers" value={totalPax} suffix="" color="#3b82f6" />
           <KPI label="Aircraft Movements" value={totalMovements} suffix="" color="#8b5cf6" />
           <KPI label="Total Revenue" value={Math.round(convert(totalRevenue, "USD") / 1000000)} prefix="" suffix="m" color="#10b981" />
-          <KPI label="Revenue Lines" value={6} suffix="" color="#f59e0b" />
+          <KPI label="Revenue Lines" value={new Set(yields.map(y => (y.forecast_revenue_lines as any)?.name).filter(Boolean)).size || 0} suffix="" color="#f59e0b" />
         </div>
 
         {/* Monthly revenue chart — animated bars with hover intelligence */}
@@ -241,7 +241,7 @@ export default function ForecastDashboard() {
                   {/* Hover tooltip */}
                   <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-20">
                     <div className="bg-gray-900 text-white rounded-lg px-3 py-2 text-[10px] whitespace-nowrap shadow-xl">
-                      <p className="font-bold mb-1">{m} {selectedYear}: {symbol}{Math.round(convert(val, "USD") / 1000000).toLocaleString()}M</p>
+                      <p className="font-bold mb-1">{m} {selectedYear}: {Math.round(convert(val, "USD") / 1000000).toLocaleString()}m</p>
                       {prevMonth > 0 && (
                         <p className={momDelta >= 0 ? "text-emerald-400" : "text-red-400"}>
                           vs prev month: {momDelta >= 0 ? "+" : ""}{momDelta.toFixed(1)}%

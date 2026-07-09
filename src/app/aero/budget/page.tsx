@@ -212,8 +212,8 @@ export default function BudgetPage() {
                 <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-20">
                   <div className="bg-gray-900 text-white rounded-lg px-3 py-2 text-[10px] whitespace-nowrap shadow-xl">
                     <p className="font-bold mb-1">{m} {budgetYear}</p>
-                    <p>Budget: {symbol}{Math.round(convert(budget, "USD") / 1000000)}M</p>
-                    <p>Actual: {symbol}{Math.round(convert(actual, "USD") / 1000000)}M</p>
+                    <p>Budget: {Math.round(convert(budget, "USD") / 1000000)}m</p>
+                    <p>Actual: {Math.round(convert(actual, "USD") / 1000000)}m</p>
                     <p className={variance >= 0 ? "text-emerald-400" : "text-red-400"}>
                       Variance: {variance >= 0 ? "+" : ""}{variance.toFixed(1)}%
                     </p>
@@ -223,7 +223,7 @@ export default function BudgetPage() {
             );
           })}
         </div>
-        <div className="flex items-center gap-6 mt-3 justify-center">
+        <div className="flex items-center gap-6 mt-3 justify-end">
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded-sm bg-gray-200" />
             <span className="text-[10px] text-gray-500">Budget</span>
