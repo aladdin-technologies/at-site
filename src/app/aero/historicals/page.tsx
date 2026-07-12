@@ -37,7 +37,7 @@ export default function HistoricalsPage() {
     if (cid) setCompanyId(cid);
 
     const baseHeaders: Record<string, string> = { "Content-Type": "application/json", apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}` };
-    const rpcUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/rpc`;
+
     const restUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1`;
 
     async function fetchAllRows(table: string, filter: string): Promise<any[]> {

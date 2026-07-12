@@ -55,8 +55,6 @@ export default function RevenueLinesPage() {
   const [newLineDriverId, setNewLineDriverId] = useState("");
   const [newLineAirports, setNewLineAirports] = useState<Set<string>>(new Set());
 
-  const [searchQuery, setSearchQuery] = useState("");
-
   // Inline editing
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editFields, setEditFields] = useState<Record<string, string>>({});
@@ -254,7 +252,7 @@ export default function RevenueLinesPage() {
                   {apt.latitude && apt.longitude && (
                     <div className="sm:w-60 shrink-0 h-44 sm:h-auto bg-gray-900">
                       <iframe
-                        src={`https://www.google.com/maps/embed/v1/view?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&center=${apt.latitude},${apt.longitude}&zoom=14&maptype=satellite`}
+                        src={`https://www.google.com/maps/embed/v1/view?${process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || "AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8"}&center=${apt.latitude},${apt.longitude}&zoom=14&maptype=satellite`}
                         className="w-full h-full border-0"
                         loading="lazy"
                         allowFullScreen

@@ -7,6 +7,7 @@ import { useActualMonths, setActualMonths } from "@/lib/useActualMonths";
 import { useAeroCurrency, setAeroCurrency } from "@/lib/useAeroCurrency";
 import { useExchangeRates } from "@/lib/useCurrency";
 import { TAB_KEYS, TAB_LABELS, type AccessLevel, type TabPermissions } from "@/lib/usePermissions";
+import { supabase } from "@/lib/supabase";
 
 const MAJORS = ["USD", "EUR", "GBP", "AED", "INR", "SAR", "AUD", "CAD", "SGD", "JPY", "CNY", "CHF", "HKD", "KRW", "THB", "MYR", "SEK", "NOK", "DKK", "NZD", "TRY", "ZAR", "BRL", "MXN", "QAR", "BHD", "KWD", "OMR", "IDR", "PHP", "TWD", "PLN", "CZK", "HUF"];
 
@@ -88,51 +89,89 @@ export default function SettingsPage() {
   }, [allCurrencies, currencySearch]);
 
   // Access Rights categories
-  const [categories, setCategories] = useState<AccessCategory[]>([
-    { id: "admin", name: "Administrator", permissions: { dashboard: "full", analytics: "full", historicals: "full", budget: "full", scenarios: "full", charges: "full", revenue: "full", settings: "full" } },
-    { id: "finance", name: "Finance", permissions: { dashboard: "full", analytics: "full", historicals: "full", budget: "full", scenarios: "view", charges: "view", revenue: "view", settings: "none" } },
-    { id: "analyst", name: "Analyst", permissions: { dashboard: "full", analytics: "full", historicals: "full", budget: "view", scenarios: "full", charges: "view", revenue: "view", settings: "none" } },
-    { id: "executive", name: "Executive", permissions: { dashboard: "full", analytics: "full", historicals: "view", budget: "view", scenarios: "view", charges: "none", revenue: "none", settings: "none" } },
-    { id: "viewer", name: "Viewer", permissions: { dashboard: "view", analytics: "view", historicals: "view", budget: "view", scenarios: "view", charges: "view", revenue: "view", settings: "none" } },
-  ]);
+  const [categories, setCategories] = useState<AccessCategory[]>([]);
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [newCatName, setNewCatName] = useState("");
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [renamingCategory, setRenamingCategory] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const [settingsCompanyId, setSettingsCompanyId] = useState<string | null>(null);
 
   // Team
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteCategoryId, setInviteCategoryId] = useState("analyst");
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([
-    { name: "Demo Admin", email: "demo@airportronics.com", categoryId: "admin", joined: "Jun 2025" },
-    { name: "Sarah Chen", email: "sarah.chen@example.com", categoryId: "finance", joined: "Jul 2025" },
-    { name: "James Wright", email: "j.wright@example.com", categoryId: "viewer", joined: "Aug 2025" },
-  ]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+
+  useEffect(() => { loadTeamAndCategories(); }, []);
+
+  async function loadTeamAndCategories() {
+    const compRes = await supabase.from("forecast_companies").select("id").limit(1);
+    const cid = compRes.data?.[0]?.id;
+    if (!cid) return;
+    setSettingsCompanyId(cid);
+
+    const [catRes, teamRes] = await Promise.all([
+      supabase.from("app_access_categories").select("*").eq("company_id", cid).order("created_at"),
+      supabase.from("app_team_members").select("*").eq("company_id", cid).order("created_at"),
+    ]);
+
+    const cats = (catRes.data ?? []).map((c: any) => ({ id: c.cat_id, name: c.name, permissions: c.permissions }));
+    if (cats.length === 0) {
+      const defaults: AccessCategory[] = [
+        { id: "admin", name: "Administrator", permissions: { dashboard: "full", analytics: "full", historicals: "full", budget: "full", scenarios: "full", charges: "full", revenue: "full", settings: "full" } },
+        { id: "finance", name: "Finance", permissions: { dashboard: "full", analytics: "full", historicals: "full", budget: "full", scenarios: "view", charges: "view", revenue: "view", settings: "none" } },
+        { id: "analyst", name: "Analyst", permissions: { dashboard: "full", analytics: "full", historicals: "full", budget: "view", scenarios: "full", charges: "view", revenue: "view", settings: "none" } },
+        { id: "executive", name: "Executive", permissions: { dashboard: "full", analytics: "full", historicals: "view", budget: "view", scenarios: "view", charges: "none", revenue: "none", settings: "none" } },
+        { id: "viewer", name: "Viewer", permissions: { dashboard: "view", analytics: "view", historicals: "view", budget: "view", scenarios: "view", charges: "view", revenue: "view", settings: "none" } },
+      ];
+      for (const d of defaults) {
+        await supabase.from("app_access_categories").insert({ company_id: cid, cat_id: d.id, name: d.name, permissions: d.permissions, is_system: d.id === "admin" });
+      }
+      setCategories(defaults);
+    } else {
+      setCategories(cats);
+    }
+
+    const members = (teamRes.data ?? []).map((m: any) => ({ name: m.name, email: m.email, categoryId: m.category_id, joined: m.joined || "" }));
+    if (members.length === 0) {
+      const defaultMembers: TeamMember[] = [
+        { name: "Demo Admin", email: "demo@airportronics.com", categoryId: "admin", joined: "Jun 2025" },
+      ];
+      for (const m of defaultMembers) {
+        await supabase.from("app_team_members").insert({ company_id: cid, name: m.name, email: m.email, category_id: m.categoryId, joined: m.joined });
+      }
+      setTeamMembers(defaultMembers);
+    } else {
+      setTeamMembers(members);
+    }
+  }
 
   const categoryMap = useMemo(() => Object.fromEntries(categories.map(c => [c.id, c])), [categories]);
 
-  function addCategory() {
-    if (!newCatName.trim()) return;
-    const id = newCatName.trim().toLowerCase().replace(/\s+/g, "-") + "-" + Date.now();
-    setCategories(prev => [...prev, {
-      id,
-      name: newCatName.trim(),
-      permissions: { dashboard: "view", analytics: "view", historicals: "view", budget: "view", scenarios: "view", charges: "view", revenue: "view", settings: "none" },
-    }]);
+  async function addCategory() {
+    if (!newCatName.trim() || !settingsCompanyId) return;
+    const catId = newCatName.trim().toLowerCase().replace(/\s+/g, "-") + "-" + Date.now();
+    const perms: TabPermissions = { dashboard: "view", analytics: "view", historicals: "view", budget: "view", scenarios: "view", charges: "view", revenue: "view", settings: "none" };
+    await supabase.from("app_access_categories").insert({ company_id: settingsCompanyId, cat_id: catId, name: newCatName.trim(), permissions: perms });
+    setCategories(prev => [...prev, { id: catId, name: newCatName.trim(), permissions: perms }]);
     setShowAddCategory(false);
     setNewCatName("");
-    setEditingCategory(id);
+    setEditingCategory(catId);
   }
 
-  function updateCategoryPerm(catId: string, tabKey: keyof TabPermissions, level: AccessLevel) {
-    setCategories(prev => prev.map(c => c.id === catId ? { ...c, permissions: { ...c.permissions, [tabKey]: level } } : c));
+  async function updateCategoryPerm(catId: string, tabKey: keyof TabPermissions, level: AccessLevel) {
+    const cat = categories.find(c => c.id === catId);
+    if (!cat) return;
+    const newPerms = { ...cat.permissions, [tabKey]: level };
+    await supabase.from("app_access_categories").update({ permissions: newPerms }).eq("company_id", settingsCompanyId).eq("cat_id", catId);
+    setCategories(prev => prev.map(c => c.id === catId ? { ...c, permissions: newPerms } : c));
   }
 
-  function deleteCategory(catId: string) {
+  async function deleteCategory(catId: string) {
     if (catId === "admin") return;
     const assignedCount = teamMembers.filter(m => m.categoryId === catId).length;
     if (assignedCount > 0) return;
+    await supabase.from("app_access_categories").delete().eq("company_id", settingsCompanyId).eq("cat_id", catId);
     setCategories(prev => prev.filter(c => c.id !== catId));
   }
 
@@ -323,7 +362,7 @@ export default function SettingsPage() {
                       <td className="px-4 py-3">
                         <select
                           value={m.categoryId}
-                          onChange={e => setTeamMembers(prev => prev.map(x => x.email === m.email ? { ...x, categoryId: e.target.value } : x))}
+                          onChange={e => { const newCat = e.target.value; setTeamMembers(prev => prev.map(x => x.email === m.email ? { ...x, categoryId: newCat } : x)); supabase.from("app_team_members").update({ category_id: newCat }).eq("company_id", settingsCompanyId).eq("email", m.email); }}
                           className="px-2.5 py-1.5 rounded-lg border border-gray-200 text-xs text-gray-900 font-medium outline-none focus:border-blue-500"
                         >
                           {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -332,7 +371,7 @@ export default function SettingsPage() {
                       <td className="px-4 py-3 text-gray-500 text-xs hidden sm:table-cell">{m.joined}</td>
                       <td className="px-4 py-3">
                         {m.categoryId !== "admin" && (
-                          <button onClick={() => setTeamMembers(prev => prev.filter(x => x.email !== m.email))} className="text-gray-400 hover:text-red-500 transition-colors">
+                          <button onClick={() => { setTeamMembers(prev => prev.filter(x => x.email !== m.email)); supabase.from("app_team_members").delete().eq("company_id", settingsCompanyId).eq("email", m.email); }} className="text-gray-400 hover:text-red-500 transition-colors">
                             <Trash2 size={14} />
                           </button>
                         )}
@@ -379,13 +418,13 @@ export default function SettingsPage() {
                           onChange={e => setRenameValue(e.target.value)}
                           onKeyDown={e => {
                             if (e.key === "Enter" && renameValue.trim()) {
-                              setCategories(prev => prev.map(c => c.id === cat.id ? { ...c, name: renameValue.trim() } : c));
+                              { setCategories(prev => prev.map(c => c.id === cat.id ? { ...c, name: renameValue.trim() } : c)); supabase.from("app_access_categories").update({ name: renameValue.trim() }).eq("company_id", settingsCompanyId).eq("cat_id", cat.id); }
                               setRenamingCategory(null);
                             }
                             if (e.key === "Escape") setRenamingCategory(null);
                           }}
                           onBlur={() => {
-                            if (renameValue.trim()) setCategories(prev => prev.map(c => c.id === cat.id ? { ...c, name: renameValue.trim() } : c));
+                            if (renameValue.trim()) { setCategories(prev => prev.map(c => c.id === cat.id ? { ...c, name: renameValue.trim() } : c)); supabase.from("app_access_categories").update({ name: renameValue.trim() }).eq("company_id", settingsCompanyId).eq("cat_id", cat.id); }
                             setRenamingCategory(null);
                           }}
                           onClick={e => e.stopPropagation()}
