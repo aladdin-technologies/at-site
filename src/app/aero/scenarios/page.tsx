@@ -77,7 +77,13 @@ export default function ScenariosPage() {
       yield_config: defaultYieldConfig,
       settings: { forecastYears: [2026, 2027, 2028] },
     });
-    setShowCreate(false); setNewName(""); setNewDesc(""); loadAll();
+    setShowCreate(false); setNewName(""); setNewDesc("");
+    const { data } = await supabase.from("forecast_versions").select("id").order("created_at", { ascending: false }).limit(1);
+    if (data?.[0]?.id) {
+      window.location.href = `/aero/scenarios/${data[0].id}`;
+    } else {
+      loadAll();
+    }
   }
 
   async function duplicateVersion(v: ForecastVersion) {
@@ -162,7 +168,7 @@ export default function ScenariosPage() {
       ) : (
         <div className="space-y-3">
           {versions.map(v => (
-            <div key={v.id} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:border-blue-200 transition-colors group">
+            <div key={v.id} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:border-blue-200 transition-colors group cursor-pointer" onClick={() => window.location.href = `/aero/scenarios/${v.id}`}>
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
@@ -177,10 +183,7 @@ export default function ScenariosPage() {
                     <span>{lines.length} revenue lines</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
-                  <button onClick={() => window.location.href = `/aero/scenarios/${v.id}`} className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 text-[10px] font-semibold hover:bg-blue-100 transition-colors flex items-center gap-1">
-                    <Eye size={12} /> Open
-                  </button>
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all" onClick={e => e.stopPropagation()}>
                   <button onClick={() => duplicateVersion(v)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors" title="Duplicate">
                     <Copy size={14} />
                   </button>
