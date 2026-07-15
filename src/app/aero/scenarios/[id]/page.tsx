@@ -340,7 +340,7 @@ export default function ScenarioDetailPage({ params }: { params: Promise<{ id: s
                           </tr>
                         </thead>
                         <tbody>
-                          {forecastYears.map(yr => {
+                          {forecastYears.map((yr: number) => {
                             const yearData = lineOutput.filter((d: any) => d.year === yr);
                             const total = yearData.reduce((s: number, d: any) => s + Number(d.value), 0);
                             return (
@@ -417,14 +417,14 @@ export default function ScenarioDetailPage({ params }: { params: Promise<{ id: s
                   <thead>
                     <tr className="bg-gray-50/80 border-b border-gray-100">
                       <th className="text-left px-3 py-2 font-semibold text-gray-500 uppercase">Revenue Line</th>
-                      {forecastYears.map(yr => <th key={yr} className="text-right px-3 py-2 font-semibold text-gray-500">{yr}</th>)}
+                      {forecastYears.map((yr: number) => <th key={yr} className="text-right px-3 py-2 font-semibold text-gray-500">{yr}</th>)}
                     </tr>
                   </thead>
                   <tbody>
                     {lines.map(line => (
                       <tr key={line.id} className="border-b border-gray-50 hover:bg-gray-50/50">
                         <td className="px-3 py-2.5 font-medium text-gray-900">{line.name}</td>
-                        {forecastYears.map(yr => {
+                        {forecastYears.map((yr: number) => {
                           const total = (version.revenue_output || []).filter((d: any) => d.line === line.name && d.year === yr).reduce((s: number, d: any) => s + Number(d.value), 0);
                           return <td key={yr} className="px-3 py-2.5 text-right font-mono text-gray-700">{Math.round(convert(total, "USD") / 1000000).toLocaleString()}m</td>;
                         })}
@@ -432,7 +432,7 @@ export default function ScenarioDetailPage({ params }: { params: Promise<{ id: s
                     ))}
                     <tr className="bg-blue-50/50 border-t-2 border-blue-200">
                       <td className="px-3 py-2.5 font-bold text-gray-900">Total Revenue</td>
-                      {forecastYears.map(yr => {
+                      {forecastYears.map((yr: number) => {
                         const total = (version.revenue_output || []).filter((d: any) => d.year === yr).reduce((s: number, d: any) => s + Number(d.value), 0);
                         return <td key={yr} className="px-3 py-2.5 text-right font-mono font-bold text-gray-900">{Math.round(convert(total, "USD") / 1000000).toLocaleString()}m</td>;
                       })}
